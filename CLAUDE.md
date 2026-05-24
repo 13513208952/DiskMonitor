@@ -332,3 +332,64 @@ gh release create vX.Y.Z DiskMonitor-vX.Y.Z-win-x64.7z --title "vX.Y.Z" --notes 
 - **DataGrid 排序**：所有列可点击正/倒序，读写/合计按字节数排序（非字符串）
 - **主题持久化**：保存到 `%AppData%\DiskMonitor\theme.txt`
 - **服务状态轮询**：10 秒定时器，定时器回调有 try/catch 防崩溃
+
+---
+
+## 技术边界与后续路线图
+
+### 归因精度的永久天花板
+
+以下盲区在不使用内核驱动的前提下**无法根本解决**，属于架构性约束：
+
+| 盲区 | 原因 | 归入 |
+|------|------|------|
+| 内存映射文件读写 | 走页错误 → Memory Manager，不生成 FileIO 事件 | `[System]` |
+| Shell 扩展 DLL 注入 explorer/dllhost | I/O 归因到宿主进程 | `explorer.exe` / `dllhost.exe` |
+| svchost 托管服务 DLL | 多服务共享同一进程，无法区分到代码级 | `svchost.exe` |
+| 内核驱动代劳的 I/O | Ring 0 执行，归因到 SYSTEM 上下文 | `[System]` |
+
+内核驱动方案超出当前协作模型的可靠边界（见下文），不予实施。
+
+### 为什么不做内核驱动
+
+内核驱动出错直接蓝屏，崩溃转储需要 WinDbg + 内核调试经验才能解读。用户无法将蓝屏信息转化为可定位问题的描述，反馈回路断裂，无法迭代修复。这是协作条件的限制，不是技术知识的限制。
+
+### 可行的后续增强方向
+
+#### 归因能力提升（用户态局部解）
+
+**svchost 服务关联**
+查询 SCM 建立 `svchost PID → 服务名列表` 映射，将"svchost.exe"细化为"是这N个服务之一"。
+实现位置：Core 层新增 `ServiceTracker` 类，纯用户态。
+
+**Shell 扩展注册表扫描**
+读取 `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved`，
+在前端单独展示所有第三方外壳扩展 DLL 及厂商，让用户知道"谁的 DLL 常驻在 explorer.exe 里"。
+
+**DLL 加载事件 ETW 关联**
+在现有 ETW 会话中追加订阅 `Microsoft-Windows-Kernel-Process` provider 的 `ImageLoad` 事件，
+记录 DLL 加载时间点，与 FileIO 时间线交叉分析，发现"加载 VendorX.dll 后30秒内大量 I/O"的关联。
+
+**网络流量关联**
+订阅 ETW 网络 provider，检测高 I/O 时段是否紧跟网络上传，判断数据是否被外送。
+
+#### 分析与呈现层
+
+- 趋势图表：按时间轴展示各进程 I/O 变化，异常峰值可视化
+- 异常告警：进程 I/O 超过历史均值 N 倍时推送系统托盘通知
+- 厂商归因：根据 exe 路径推断所属公司，按公司维度聚合 I/O
+- 进程树视图：基于已有 Process/Start ETW 事件数据，展示进程父子关系
+- 定时摘要：每日/每周 I/O 报告
+
+#### 工程质量
+
+- 正式安装程序（MSIX / WiX）替代手动 `sc.exe`
+- 多语言支持（WPF 资源文件 i18n，优先中/英）
+- Windows 版本适配（跟进 ETW API 变更）
+
+### 隐藏 vs 监控的不对称性（背景）
+
+在 Windows 上，有效隐藏扫盘的技术门槛极低（公开 API + 普通安装权限 + 任何开发者），
+而有效监控并完整归因的成本呈断崖式跳升（内核驱动 + EV 签名 + 微软审批 + 持续维护）。
+这一不对称嵌入在 Windows 扩展性架构的历史设计中，被商业生态利益结构进一步强化。
+DiskMonitor 的价值在于在用户态极限处维持可见性，为舆论和监管行动提供证据基础。
