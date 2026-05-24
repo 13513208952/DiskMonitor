@@ -1,13 +1,44 @@
 <Window x:Class="DiskMonitor.Frontend.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="DiskMonitor" Height="760" Width="1160"
-        MinHeight="600" MinWidth="900"
+        Title="DiskMonitor" Height="780" Width="1200"
+        MinHeight="620" MinWidth="960"
         Background="{DynamicResource BgBase}"
         FontFamily="Segoe UI"
         WindowStyle="SingleBorderWindow"
         Loaded="Window_Loaded"
         Closing="Window_Closing">
+
+    <Window.Resources>
+        <Style x:Key="SubTabBtn" TargetType="RadioButton">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bd" Padding="16,0" Background="Transparent"
+                                BorderBrush="Transparent" BorderThickness="0,0,0,2">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TxtPrimary}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter Property="Foreground" Value="{DynamicResource TxtMuted}"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource TxtPrimary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -20,8 +51,6 @@
         <Border Grid.Row="0" Background="{DynamicResource BgSurface}"
                 BorderBrush="{DynamicResource BgBorder}" BorderThickness="0,0,0,1">
             <DockPanel Margin="20,0" LastChildFill="False">
-
-                <!-- Left: logo + title -->
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
                     <Viewbox Width="22" Height="22" Margin="0,0,10,0">
                         <Canvas Width="24" Height="24">
@@ -43,8 +72,6 @@
                                Foreground="{DynamicResource TxtMuted}"
                                VerticalAlignment="Center"/>
                 </StackPanel>
-
-                <!-- Right: status + controls -->
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                     <Ellipse x:Name="StatusDot" Width="8" Height="8"
                              Fill="{DynamicResource TxtMuted}"
@@ -59,7 +86,6 @@
                             Style="{StaticResource GhostBtn}"
                             Click="BtnStop_Click"/>
                 </StackPanel>
-
             </DockPanel>
         </Border>
 
@@ -74,8 +100,6 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-
-                    <!-- Toolbar -->
                     <Border Grid.Row="0" Background="{DynamicResource BgSurface}"
                             BorderBrush="{DynamicResource BgBorder}" BorderThickness="0,0,0,1"
                             Padding="20,10">
@@ -88,58 +112,44 @@
                                     Click="BtnRefresh_Click"/>
                         </DockPanel>
                     </Border>
-
-                    <!-- Stat cards -->
                     <UniformGrid Grid.Row="1" Columns="3" Margin="20,16,20,0">
-
                         <Border Margin="0,0,8,0" Background="{DynamicResource BgCard}"
                                 BorderBrush="{DynamicResource BgBorder}" BorderThickness="1"
                                 CornerRadius="8" Padding="20,16">
                             <StackPanel>
-                                <TextBlock Text="总读取" FontSize="11"
-                                           Foreground="{DynamicResource TxtSecond}"/>
+                                <TextBlock Text="总读取" FontSize="11" Foreground="{DynamicResource TxtSecond}"/>
                                 <TextBlock x:Name="TxtTotalRead" Text="—"
                                            FontSize="26" FontWeight="Light" Margin="0,6,0,0"
                                            Foreground="{DynamicResource AccentLight}"/>
                                 <TextBlock x:Name="TxtTotalReadSub" Text=" "
-                                           FontSize="11" Foreground="{DynamicResource TxtMuted}"
-                                           Margin="0,3,0,0"/>
+                                           FontSize="11" Foreground="{DynamicResource TxtMuted}" Margin="0,3,0,0"/>
                             </StackPanel>
                         </Border>
-
                         <Border Margin="4,0" Background="{DynamicResource BgCard}"
                                 BorderBrush="{DynamicResource BgBorder}" BorderThickness="1"
                                 CornerRadius="8" Padding="20,16">
                             <StackPanel>
-                                <TextBlock Text="总写入" FontSize="11"
-                                           Foreground="{DynamicResource TxtSecond}"/>
+                                <TextBlock Text="总写入" FontSize="11" Foreground="{DynamicResource TxtSecond}"/>
                                 <TextBlock x:Name="TxtTotalWrite" Text="—"
                                            FontSize="26" FontWeight="Light" Margin="0,6,0,0"
                                            Foreground="{DynamicResource WriteFg}"/>
                                 <TextBlock x:Name="TxtTotalWriteSub" Text=" "
-                                           FontSize="11" Foreground="{DynamicResource TxtMuted}"
-                                           Margin="0,3,0,0"/>
+                                           FontSize="11" Foreground="{DynamicResource TxtMuted}" Margin="0,3,0,0"/>
                             </StackPanel>
                         </Border>
-
                         <Border Margin="8,0,0,0" Background="{DynamicResource BgCard}"
                                 BorderBrush="{DynamicResource BgBorder}" BorderThickness="1"
                                 CornerRadius="8" Padding="20,16">
                             <StackPanel>
-                                <TextBlock Text="活跃进程" FontSize="11"
-                                           Foreground="{DynamicResource TxtSecond}"/>
+                                <TextBlock Text="活跃进程" FontSize="11" Foreground="{DynamicResource TxtSecond}"/>
                                 <TextBlock x:Name="TxtProcCount" Text="—"
                                            FontSize="26" FontWeight="Light" Margin="0,6,0,0"
                                            Foreground="{DynamicResource CountFg}"/>
                                 <TextBlock x:Name="TxtProcCountSub" Text=" "
-                                           FontSize="11" Foreground="{DynamicResource TxtMuted}"
-                                           Margin="0,3,0,0"/>
+                                           FontSize="11" Foreground="{DynamicResource TxtMuted}" Margin="0,3,0,0"/>
                             </StackPanel>
                         </Border>
-
                     </UniformGrid>
-
-                    <!-- DataGrid -->
                     <DataGrid Grid.Row="2" x:Name="GridToday" Margin="20,14,20,0"
                               VirtualizingPanel.IsVirtualizing="True"
                               VirtualizingPanel.VirtualizationMode="Recycling"
@@ -151,16 +161,11 @@
                             </ContextMenu>
                         </DataGrid.ContextMenu>
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="进程" Binding="{Binding ProcessName}"
-                                                Width="*" MinWidth="160"/>
-                            <DataGridTextColumn Header="盘符" Binding="{Binding DriveLetter}"
-                                                Width="58"/>
-                            <DataGridTextColumn Header="卷标" Binding="{Binding VolumeLabel}"
-                                                Width="110"/>
-                            <DataGridTextColumn Header="磁盘型号" Binding="{Binding DiskModel}"
-                                                Width="200"/>
-                            <DataGridTextColumn Header="读取" Binding="{Binding ReadDisplay}"
-                                                Width="100" SortMemberPath="ReadBytes">
+                            <DataGridTextColumn Header="进程" Binding="{Binding ProcessName}" Width="*" MinWidth="160"/>
+                            <DataGridTextColumn Header="盘符" Binding="{Binding DriveLetter}" Width="58"/>
+                            <DataGridTextColumn Header="卷标" Binding="{Binding VolumeLabel}" Width="110"/>
+                            <DataGridTextColumn Header="磁盘型号" Binding="{Binding DiskModel}" Width="200"/>
+                            <DataGridTextColumn Header="读取" Binding="{Binding ReadDisplay}" Width="100" SortMemberPath="ReadBytes">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -169,8 +174,7 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="写入" Binding="{Binding WriteDisplay}"
-                                                Width="100" SortMemberPath="WriteBytes">
+                            <DataGridTextColumn Header="写入" Binding="{Binding WriteDisplay}" Width="100" SortMemberPath="WriteBytes">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -179,8 +183,7 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="合计" Binding="{Binding TotalDisplay}"
-                                                Width="110" SortMemberPath="TotalBytes">
+                            <DataGridTextColumn Header="合计" Binding="{Binding TotalDisplay}" Width="110" SortMemberPath="TotalBytes">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -191,7 +194,6 @@
                             </DataGridTextColumn>
                         </DataGrid.Columns>
                     </DataGrid>
-
                 </Grid>
             </TabItem>
 
@@ -202,20 +204,16 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-
-                    <!-- Toolbar -->
                     <Border Grid.Row="0" Background="{DynamicResource BgSurface}"
                             BorderBrush="{DynamicResource BgBorder}" BorderThickness="0,0,0,1"
                             Padding="20,10">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="从" VerticalAlignment="Center" Margin="0,0,8,0"
                                        FontSize="12" Foreground="{DynamicResource TxtSecond}"/>
-                            <DatePicker x:Name="DpFrom" Width="130" Height="32"
-                                        SelectedDateFormat="Short"/>
+                            <DatePicker x:Name="DpFrom" Width="130" Height="32" SelectedDateFormat="Short"/>
                             <TextBlock Text="到" VerticalAlignment="Center" Margin="12,0,8,0"
                                        FontSize="12" Foreground="{DynamicResource TxtSecond}"/>
-                            <DatePicker x:Name="DpTo" Width="130" Height="32"
-                                        SelectedDateFormat="Short"/>
+                            <DatePicker x:Name="DpTo" Width="130" Height="32" SelectedDateFormat="Short"/>
                             <Button Content="查询" Style="{StaticResource PrimaryBtn}"
                                     Margin="12,0,0,0" Click="BtnQuery_Click"/>
                             <Button Content="导出 CSV" Style="{StaticResource GhostBtn}"
@@ -225,8 +223,6 @@
                                        FontSize="11" Foreground="{DynamicResource TxtMuted}"/>
                         </StackPanel>
                     </Border>
-
-                    <!-- DataGrid -->
                     <DataGrid Grid.Row="1" x:Name="GridHistory"
                               VirtualizingPanel.IsVirtualizing="True"
                               VirtualizingPanel.VirtualizationMode="Recycling"
@@ -238,17 +234,12 @@
                             </ContextMenu>
                         </DataGrid.ContextMenu>
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="日期" Binding="{Binding Date}" Width="90"/>
-                            <DataGridTextColumn Header="进程" Binding="{Binding ProcessName}"
-                                                Width="*" MinWidth="150"/>
-                            <DataGridTextColumn Header="盘符" Binding="{Binding DriveLetter}"
-                                                Width="58"/>
-                            <DataGridTextColumn Header="卷标" Binding="{Binding VolumeLabel}"
-                                                Width="110"/>
-                            <DataGridTextColumn Header="磁盘型号" Binding="{Binding DiskModel}"
-                                                Width="180"/>
-                            <DataGridTextColumn Header="读取" Binding="{Binding ReadDisplay}"
-                                                Width="100" SortMemberPath="ReadBytes">
+                            <DataGridTextColumn Header="日期"     Binding="{Binding Date}"        Width="90"/>
+                            <DataGridTextColumn Header="进程"     Binding="{Binding ProcessName}" Width="*" MinWidth="150"/>
+                            <DataGridTextColumn Header="盘符"     Binding="{Binding DriveLetter}" Width="58"/>
+                            <DataGridTextColumn Header="卷标"     Binding="{Binding VolumeLabel}" Width="110"/>
+                            <DataGridTextColumn Header="磁盘型号" Binding="{Binding DiskModel}"   Width="180"/>
+                            <DataGridTextColumn Header="读取" Binding="{Binding ReadDisplay}" Width="100" SortMemberPath="ReadBytes">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -257,8 +248,7 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="写入" Binding="{Binding WriteDisplay}"
-                                                Width="100" SortMemberPath="WriteBytes">
+                            <DataGridTextColumn Header="写入" Binding="{Binding WriteDisplay}" Width="100" SortMemberPath="WriteBytes">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -267,8 +257,7 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="合计" Binding="{Binding TotalDisplay}"
-                                                Width="110" SortMemberPath="TotalBytes">
+                            <DataGridTextColumn Header="合计" Binding="{Binding TotalDisplay}" Width="110" SortMemberPath="TotalBytes">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -279,6 +268,588 @@
                             </DataGridTextColumn>
                         </DataGrid.Columns>
                     </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <!-- ── 异常分析 ──────────────────────────────────── -->
+            <TabItem Header="异常分析">
+                <Grid Background="{DynamicResource BgBase}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="38"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Sub-nav bar -->
+                    <Border Grid.Row="0" Background="{DynamicResource BgSurface}"
+                            BorderBrush="{DynamicResource BgBorder}" BorderThickness="0,0,0,1">
+                        <StackPanel Orientation="Horizontal" Margin="12,0">
+                            <RadioButton x:Name="RbSubIo" Content="IO 监控" IsChecked="True"
+                                         GroupName="AnalysisSubNav" Style="{StaticResource SubTabBtn}"
+                                         Checked="SubTab_Checked"/>
+                            <RadioButton x:Name="RbSubShell" Content="插件检测"
+                                         GroupName="AnalysisSubNav" Style="{StaticResource SubTabBtn}"
+                                         Checked="SubTab_Checked"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ── Panel 1: IO 监控 ─────────────────────── -->
+                    <Grid x:Name="PanelSubIo" Grid.Row="1" Visibility="Visible"
+                          Background="{DynamicResource BgBase}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="2*" MinHeight="100"/>
+                            <RowDefinition Height="1"/>
+                            <RowDefinition Height="3*" MinHeight="130"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Toolbar -->
+                        <Border Grid.Row="0" Background="{DynamicResource BgSurface}"
+                                BorderBrush="{DynamicResource BgBorder}" BorderThickness="0,0,0,1"
+                                Padding="20,10">
+                            <DockPanel LastChildFill="True">
+                                <Button DockPanel.Dock="Left" x:Name="BtnRunAnalysis"
+                                        Content="开始分析" Style="{StaticResource PrimaryBtn}"
+                                        Click="BtnRunAnalysis_Click" Margin="0,0,16,0"/>
+                                <CheckBox DockPanel.Dock="Right" x:Name="ChkLooseMode"
+                                          Content="宽松模式" VerticalAlignment="Center" Margin="16,0,0,0"
+                                          ToolTip="忽略由系统组件主导的异常；阈值宽松15%"
+                                          Checked="AnalysisOptionChanged" Unchecked="AnalysisOptionChanged"/>
+                                <CheckBox DockPanel.Dock="Right" x:Name="ChkAnalysisEnabled"
+                                          Content="启用分析" VerticalAlignment="Center" Margin="16,0,0,0"
+                                          Checked="AnalysisOptionChanged" Unchecked="AnalysisOptionChanged"/>
+                                <TextBlock x:Name="TxtAnalysisStatus" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TxtMuted}" FontSize="12"/>
+                            </DockPanel>
+                        </Border>
+
+                        <!-- Alert results -->
+                        <Grid Grid.Row="1" Margin="20,12,20,8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="警告" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <DataGrid Grid.Row="1" x:Name="GridAlerts"
+                                      VirtualizingPanel.IsVirtualizing="True">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="驱动器" Binding="{Binding DriveDisplay}" Width="130" MinWidth="80"/>
+                                    <DataGridTextColumn Header="类型"   Binding="{Binding ExceededTypeDisplay}" Width="55"/>
+                                    <DataGridTextColumn Header="日期"   Binding="{Binding Date}"         Width="92"/>
+                                    <DataGridTextColumn Header="实际 I/O" Binding="{Binding ActualDisplay}" Width="105" SortMemberPath="ActualTotalBytes">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                <Setter Property="Padding" Value="0,0,10,0"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource Orange}"/>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="读取" Binding="{Binding ReadDisplay}" Width="95" SortMemberPath="ActualReadBytes">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                <Setter Property="Padding" Value="0,0,10,0"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource AccentLight}"/>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="写入" Binding="{Binding WriteDisplay}" Width="95" SortMemberPath="ActualWriteBytes">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                <Setter Property="Padding" Value="0,0,10,0"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource WriteFg}"/>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="告警阈值" Binding="{Binding ThresholdDisplay}" Width="100" SortMemberPath="ThresholdBytes">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                <Setter Property="Padding" Value="0,0,10,0"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource TxtMuted}"/>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="超出" Binding="{Binding ExcessDisplay}" Width="68">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                <Setter Property="Padding" Value="0,0,10,0"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource Red}"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTemplateColumn Header="操作" Width="86">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Content="忽略该日"
+                                                        Tag="{Binding}"
+                                                        Click="BtnIgnoreAlertDay_Click"
+                                                        Padding="6,3" FontSize="11" Margin="6,4"
+                                                        Style="{StaticResource GhostBtn}"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <TextBlock x:Name="TxtAlertsOverlay" Grid.Row="1"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TxtMuted}" FontSize="13"
+                                       IsHitTestVisible="False"
+                                       Text="点击「开始分析」加载分析结果"/>
+                        </Grid>
+
+                        <!-- Separator -->
+                        <Border Grid.Row="2" Background="{DynamicResource BgBorder}"/>
+
+                        <!-- Exclusion settings -->
+                        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto"
+                                      Background="{DynamicResource BgBase}">
+                            <StackPanel Margin="20,14,20,14">
+
+                                <!-- Drive exclusions -->
+                                <TextBlock Text="驱动器排除" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <Border Background="{DynamicResource BgCard}"
+                                        BorderBrush="{DynamicResource BgBorder}" BorderThickness="1"
+                                        CornerRadius="8" Padding="16,14" Margin="0,0,0,14">
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="170"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="170"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="逻辑驱动器" VerticalAlignment="Center"
+                                                       FontSize="12" Margin="0,0,8,0"
+                                                       Foreground="{DynamicResource TxtSecond}"/>
+                                            <ComboBox Grid.Column="1" x:Name="CmbExcludeVolume" Height="32"/>
+                                            <TextBlock Grid.Column="2" Text="物理磁盘" VerticalAlignment="Center"
+                                                       FontSize="12" Margin="12,0,8,0"
+                                                       Foreground="{DynamicResource TxtSecond}"/>
+                                            <ComboBox Grid.Column="3" x:Name="CmbExcludeDisk" Height="32"/>
+                                            <Button Grid.Column="4" Content="添加排除" Margin="10,0,0,0"
+                                                    Style="{StaticResource GhostBtn}"
+                                                    Click="BtnAddDriveExclusion_Click"/>
+                                        </Grid>
+                                        <ItemsControl x:Name="DriveExclusionList">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Process exclusions -->
+                                <TextBlock Text="进程排除" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <Border Background="{DynamicResource BgCard}"
+                                        BorderBrush="{DynamicResource BgBorder}" BorderThickness="1"
+                                        CornerRadius="8" Padding="16,14" Margin="0,0,0,14">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                            <CheckBox x:Name="ChkExcludeSysProc"
+                                                      Content="排除所有系统进程" Margin="0,0,24,0"
+                                                      VerticalAlignment="Center"
+                                                      Checked="ProcessExclusionChanged"
+                                                      Unchecked="ProcessExclusionChanged"/>
+                                            <CheckBox x:Name="ChkExcludeExplorer"
+                                                      Content="排除文件资源管理器 (explorer.exe)"
+                                                      VerticalAlignment="Center"
+                                                      Checked="ProcessExclusionChanged"
+                                                      Unchecked="ProcessExclusionChanged"/>
+                                        </StackPanel>
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="280"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="手动排除进程" VerticalAlignment="Center"
+                                                       FontSize="12" Margin="0,0,8,0"
+                                                       Foreground="{DynamicResource TxtSecond}"/>
+                                            <ComboBox Grid.Column="1" x:Name="CmbExcludeProcess"
+                                                      Height="32" IsEditable="True"/>
+                                            <Button Grid.Column="2" Content="添加排除" Margin="10,0,0,0"
+                                                    Style="{StaticResource GhostBtn}"
+                                                    Click="BtnAddProcessExclusion_Click"/>
+                                        </Grid>
+                                        <ItemsControl x:Name="ProcessExclusionList">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Date exclusions -->
+                                <TextBlock Text="日期 / 时段排除" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <Border Background="{DynamicResource BgCard}"
+                                        BorderBrush="{DynamicResource BgBorder}" BorderThickness="1"
+                                        CornerRadius="8" Padding="16,14" Margin="0,0,0,14">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                            <TextBlock Text="排除最近" VerticalAlignment="Center"
+                                                       FontSize="12" Margin="0,0,6,0"
+                                                       Foreground="{DynamicResource TxtSecond}"/>
+                                            <TextBox x:Name="TxtIgnoreHours" Width="56" Height="32"
+                                                     Text="24" VerticalContentAlignment="Center"/>
+                                            <TextBlock Text="小时内数据（一次性）" VerticalAlignment="Center"
+                                                       FontSize="12" Margin="6,0,12,0"
+                                                       Foreground="{DynamicResource TxtSecond}"/>
+                                            <Button Content="设置" Style="{StaticResource GhostBtn}"
+                                                    Click="BtnSetIgnorePeriod_Click" Margin="0,0,16,0"/>
+                                            <Button Content="一键排除所有历史至今" Style="{StaticResource GhostBtn}"
+                                                    Click="BtnIgnoreAllBefore_Click"/>
+                                        </StackPanel>
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="130"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="130"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="170"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="从" VerticalAlignment="Center"
+                                                       FontSize="12" Margin="0,0,6,0"
+                                                       Foreground="{DynamicResource TxtSecond}"/>
+                                            <DatePicker Grid.Column="1" x:Name="DpExcludeFrom"
+                                                        Height="32" SelectedDateFormat="Short"/>
+                                            <TextBlock Grid.Column="2" Text="到" VerticalAlignment="Center"
+                                                       FontSize="12" Margin="8,0,6,0"
+                                                       Foreground="{DynamicResource TxtSecond}"/>
+                                            <DatePicker Grid.Column="3" x:Name="DpExcludeTo"
+                                                        Height="32" SelectedDateFormat="Short"/>
+                                            <TextBlock Grid.Column="4" Text="驱动器" VerticalAlignment="Center"
+                                                       FontSize="12" Margin="8,0,6,0"
+                                                       Foreground="{DynamicResource TxtSecond}"/>
+                                            <ComboBox Grid.Column="5" x:Name="CmbExcludeDateVolume" Height="32"/>
+                                            <Button Grid.Column="6" Content="添加" Margin="8,0,0,0"
+                                                    Style="{StaticResource GhostBtn}"
+                                                    Click="BtnAddDateExclusion_Click"/>
+                                        </Grid>
+                                        <ItemsControl x:Name="DateExclusionList">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <!-- ── Panel 2: 插件检测 ─────────────────────── -->
+                    <Grid x:Name="PanelSubShell" Grid.Row="1" Visibility="Collapsed"
+                          Background="{DynamicResource BgBase}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="2*" MinHeight="120"/>
+                            <RowDefinition Height="1"/>
+                            <RowDefinition Height="3*" MinHeight="180"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Toolbar -->
+                        <Border Grid.Row="0" Background="{DynamicResource BgSurface}"
+                                BorderBrush="{DynamicResource BgBorder}" BorderThickness="0,0,0,1"
+                                Padding="20,10">
+                            <DockPanel LastChildFill="True">
+                                <Button DockPanel.Dock="Left" x:Name="BtnScanPlugins"
+                                        Content="扫描插件" Style="{StaticResource PrimaryBtn}"
+                                        Click="BtnScanPlugins_Click" Margin="0,0,16,0"/>
+                                <CheckBox DockPanel.Dock="Right" x:Name="ChkHideMicrosoft"
+                                          Content="隐藏微软组件" VerticalAlignment="Center" Margin="16,0,0,0"
+                                          Checked="ShellFilterChanged" Unchecked="ShellFilterChanged"/>
+                                <TextBlock x:Name="TxtShellStatus" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TxtMuted}" FontSize="12"
+                                           Text="点击「扫描插件」加载数据"/>
+                            </DockPanel>
+                        </Border>
+
+                        <!-- Main DataGrid -->
+                        <Grid Grid.Row="1" Margin="20,12,20,8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="已注册的 Shell 扩展（资源管理器插件）"
+                                       FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <DataGrid Grid.Row="1" x:Name="GridShellExt"
+                                      VirtualizingPanel.IsVirtualizing="True"
+                                      PreviewMouseRightButtonDown="Grid_PreviewMouseRightButtonDown">
+                                <DataGrid.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="打开文件所在目录" Click="ShellExtOpenDir_Click"/>
+                                        <MenuItem Header="复制路径"         Click="ShellExtCopyPath_Click"/>
+                                        <Separator/>
+                                        <MenuItem Header="将此 DLL 加入白名单"  Click="ShellExtWhitelistFile_Click"/>
+                                        <MenuItem Header="将此厂商加入白名单"   Click="ShellExtWhitelistVendor_Click"/>
+                                    </ContextMenu>
+                                </DataGrid.ContextMenu>
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="DLL 名称" Binding="{Binding DllName}"           Width="180" MinWidth="100"/>
+                                    <DataGridTextColumn Header="厂商"     Binding="{Binding VendorName}"        Width="160" MinWidth="80"/>
+                                    <DataGridTextColumn Header="创建时间" Binding="{Binding CreationDisplay}"   Width="128" SortMemberPath="FileCreationTime"/>
+                                    <DataGridTextColumn Header="最终修改" Binding="{Binding LastModifiedDisplay}" Width="128" SortMemberPath="LastModifiedTime"/>
+                                    <DataGridTextColumn Header=""         Binding="{Binding GhostLabel}"         Width="80">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{DynamicResource Orange}"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="路径" Binding="{Binding PathDisplay}" Width="*" MinWidth="200"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <TextBlock x:Name="TxtShellOverlay" Grid.Row="1"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TxtMuted}" FontSize="13"
+                                       IsHitTestVisible="False"/>
+                        </Grid>
+
+                        <!-- Separator -->
+                        <Border Grid.Row="2" Background="{DynamicResource BgBorder}"/>
+
+                        <!-- Analysis + Whitelist section -->
+                        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto"
+                                      Background="{DynamicResource BgBase}">
+                            <StackPanel Margin="20,14,20,14">
+
+                                <!-- Whitelist card -->
+                                <TextBlock Text="白名单" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <Border Background="{DynamicResource BgCard}"
+                                        BorderBrush="{DynamicResource BgBorder}" BorderThickness="1"
+                                        CornerRadius="8" Padding="16,14" Margin="0,0,0,14">
+                                    <StackPanel>
+                                        <CheckBox x:Name="ChkExcludeSystemFolder"
+                                                  Content="一键排除系统文件夹（%SystemRoot% 及 %SystemRoot%\System32）内全部 DLL"
+                                                  Margin="0,0,0,12"
+                                                  Checked="ChkExcludeSystemFolder_Changed"
+                                                  Unchecked="ChkExcludeSystemFolder_Changed"/>
+                                        <!-- Vendor -->
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="56"/>
+                                                <ColumnDefinition Width="220"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="厂商" VerticalAlignment="Center"
+                                                       FontSize="12" Foreground="{DynamicResource TxtSecond}"/>
+                                            <ComboBox Grid.Column="1" x:Name="CmbWhitelistVendor" Height="32" IsEditable="True"/>
+                                            <Button Grid.Column="2" Content="加入白名单" Margin="8,0,0,0"
+                                                    Style="{StaticResource GhostBtn}"
+                                                    Click="BtnWhitelistVendor_Click"/>
+                                        </Grid>
+                                        <!-- File -->
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="56"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="DLL 文件" VerticalAlignment="Center"
+                                                       FontSize="12" Foreground="{DynamicResource TxtSecond}"/>
+                                            <TextBox Grid.Column="1" x:Name="TxtWhitelistFile" Height="32"
+                                                     VerticalContentAlignment="Center"/>
+                                            <Button Grid.Column="2" Content="浏览…" Margin="8,0,0,0"
+                                                    Style="{StaticResource GhostBtn}"
+                                                    Click="BtnBrowseWhitelistFile_Click"/>
+                                            <Button Grid.Column="3" Content="加入白名单" Margin="6,0,0,0"
+                                                    Style="{StaticResource GhostBtn}"
+                                                    Click="BtnWhitelistFile_Click"/>
+                                        </Grid>
+                                        <!-- Directory -->
+                                        <Grid Margin="0,0,0,12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="56"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="目录" VerticalAlignment="Center"
+                                                       FontSize="12" Foreground="{DynamicResource TxtSecond}"/>
+                                            <TextBox Grid.Column="1" x:Name="TxtWhitelistDir" Height="32"
+                                                     VerticalContentAlignment="Center"/>
+                                            <Button Grid.Column="2" Content="浏览…" Margin="8,0,0,0"
+                                                    Style="{StaticResource GhostBtn}"
+                                                    Click="BtnBrowseWhitelistDir_Click"/>
+                                            <Button Grid.Column="3" Content="加入白名单" Margin="6,0,0,0"
+                                                    Style="{StaticResource GhostBtn}"
+                                                    Click="BtnWhitelistDir_Click"/>
+                                        </Grid>
+                                        <!-- Whitelist browse / remove -->
+                                        <DataGrid x:Name="GridShellWhitelist" MaxHeight="200"
+                                                  VirtualizingPanel.IsVirtualizing="True">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="类型" Binding="{Binding TypeDisplay}" Width="70"/>
+                                                <DataGridTextColumn Header="内容" Binding="{Binding Value}"       Width="*"/>
+                                                <DataGridTemplateColumn Header="操作" Width="68">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <Button Content="移除"
+                                                                    Tag="{Binding}"
+                                                                    Click="BtnRemoveWhitelistEntry_Click"
+                                                                    Padding="6,3" FontSize="11" Margin="6,4"
+                                                                    Style="{StaticResource GhostBtn}"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Top 5 newest + Top 10 modified -->
+                                <Grid Margin="0,0,0,14">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <!-- Top 5 newest -->
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="最新加入 (5)" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                        <DataGrid x:Name="GridTop5Newest" MaxHeight="160"
+                                                  VirtualizingPanel.IsVirtualizing="True"
+                                                  PreviewMouseRightButtonDown="Grid_PreviewMouseRightButtonDown">
+                                            <DataGrid.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="打开文件所在目录" Click="ShellExtOpenDir_Click"/>
+                                                    <MenuItem Header="复制路径"         Click="ShellExtCopyPath_Click"/>
+                                                </ContextMenu>
+                                            </DataGrid.ContextMenu>
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="DLL"  Binding="{Binding DllName}"       Width="*"/>
+                                                <DataGridTextColumn Header="厂商" Binding="{Binding VendorName}"    Width="130"/>
+                                                <DataGridTextColumn Header="创建时间" Binding="{Binding CreationDisplay}" Width="128" SortMemberPath="FileCreationTime"/>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                    <!-- Top 10 modified -->
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="最近修改 (10)" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                        <DataGrid x:Name="GridTop10Modified" MaxHeight="160"
+                                                  VirtualizingPanel.IsVirtualizing="True"
+                                                  PreviewMouseRightButtonDown="Grid_PreviewMouseRightButtonDown">
+                                            <DataGrid.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="打开文件所在目录" Click="ShellExtOpenDir_Click"/>
+                                                    <MenuItem Header="复制路径"         Click="ShellExtCopyPath_Click"/>
+                                                </ContextMenu>
+                                            </DataGrid.ContextMenu>
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="DLL"  Binding="{Binding DllName}"            Width="*"/>
+                                                <DataGridTextColumn Header="厂商" Binding="{Binding VendorName}"         Width="130"/>
+                                                <DataGridTextColumn Header="最终修改" Binding="{Binding LastModifiedDisplay}" Width="128" SortMemberPath="LastModifiedTime"/>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Explorer 7-day I/O -->
+                                <TextBlock Text="Explorer 近7天 I/O" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <Border Background="{DynamicResource BgCard}"
+                                        BorderBrush="{DynamicResource BgBorder}" BorderThickness="1"
+                                        CornerRadius="8" Padding="16,14" Margin="0,0,0,14">
+                                    <StackPanel>
+                                        <!-- Bar chart -->
+                                        <ItemsControl x:Name="ExplorerDayChart" Margin="0,0,0,4">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Width="68" Margin="2,0" ToolTip="{Binding Tooltip}">
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="64"/>
+                                                            <RowDefinition Height="Auto"/>
+                                                        </Grid.RowDefinitions>
+                                                        <Grid Grid.Row="0" VerticalAlignment="Bottom">
+                                                            <StackPanel VerticalAlignment="Bottom">
+                                                                <Rectangle Height="{Binding ReadBarHeight}"  Fill="{DynamicResource AccentLight}"/>
+                                                                <Rectangle Height="{Binding WriteBarHeight}" Fill="{DynamicResource WriteFg}"/>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                        <TextBlock Grid.Row="1" Text="{Binding DayLabel}"
+                                                                   HorizontalAlignment="Center" FontSize="10"
+                                                                   Foreground="{DynamicResource TxtMuted}" Margin="0,3,0,0"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <!-- Legend -->
+                                        <StackPanel Orientation="Horizontal" Margin="4,0,0,10">
+                                            <Rectangle Width="12" Height="12" Fill="{DynamicResource AccentLight}" VerticalAlignment="Center"/>
+                                            <TextBlock Text=" 读取" FontSize="11" Foreground="{DynamicResource TxtSecond}" Margin="0,0,14,0"/>
+                                            <Rectangle Width="12" Height="12" Fill="{DynamicResource WriteFg}" VerticalAlignment="Center"/>
+                                            <TextBlock Text=" 写入" FontSize="11" Foreground="{DynamicResource TxtSecond}"/>
+                                        </StackPanel>
+                                        <!-- Day list -->
+                                        <DataGrid x:Name="GridExplorerDays" MaxHeight="160"
+                                                  VirtualizingPanel.IsVirtualizing="True">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="日期" Binding="{Binding Date}"        Width="100"/>
+                                                <DataGridTextColumn Header="读取" Binding="{Binding ReadDisplay}"  Width="110" SortMemberPath="ReadBytes">
+                                                    <DataGridTextColumn.ElementStyle>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                            <Setter Property="Padding" Value="0,0,10,0"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource AccentLight}"/>
+                                                        </Style>
+                                                    </DataGridTextColumn.ElementStyle>
+                                                </DataGridTextColumn>
+                                                <DataGridTextColumn Header="写入" Binding="{Binding WriteDisplay}" Width="110" SortMemberPath="WriteBytes">
+                                                    <DataGridTextColumn.ElementStyle>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                            <Setter Property="Padding" Value="0,0,10,0"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource WriteFg}"/>
+                                                        </Style>
+                                                    </DataGridTextColumn.ElementStyle>
+                                                </DataGridTextColumn>
+                                                <DataGridTextColumn Header="合计" Binding="{Binding TotalDisplay}" Width="110" SortMemberPath="TotalBytes">
+                                                    <DataGridTextColumn.ElementStyle>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                            <Setter Property="Padding" Value="0,0,10,0"/>
+                                                        </Style>
+                                                    </DataGridTextColumn.ElementStyle>
+                                                </DataGridTextColumn>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Ghost paths (shown only when exists) -->
+                                <TextBlock x:Name="TxtGhostSection"
+                                           Text="幽灵路径（注册记录存在但文件已不存在）"
+                                           FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"
+                                           Foreground="{DynamicResource Orange}"
+                                           Visibility="Collapsed"/>
+                                <Border x:Name="GhostCard" Background="{DynamicResource BgCard}"
+                                        BorderBrush="{DynamicResource BgBorder}" BorderThickness="1"
+                                        CornerRadius="8" Padding="16,14" Margin="0,0,0,14"
+                                        Visibility="Collapsed">
+                                    <DataGrid x:Name="GridGhosts" MaxHeight="160"
+                                              VirtualizingPanel.IsVirtualizing="True">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="CLSID"    Binding="{Binding Clsid}"       Width="260"/>
+                                            <DataGridTextColumn Header="描述"     Binding="{Binding Description}" Width="200"/>
+                                            <DataGridTextColumn Header="注册路径" Binding="{Binding PathDisplay}" Width="*"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </Border>
+
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
 
                 </Grid>
             </TabItem>
@@ -287,11 +858,10 @@
             <TabItem Header="设置">
                 <ScrollViewer Background="{DynamicResource BgBase}"
                                VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="40,28" MaxWidth="700">
+                    <StackPanel Margin="40,28" MaxWidth="800">
 
-                        <!-- Theme section -->
-                        <TextBlock Text="外观主题" FontSize="14" FontWeight="SemiBold"
-                                   Margin="0,0,0,12"/>
+                        <!-- Theme -->
+                        <TextBlock Text="外观主题" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,12"/>
                         <Border Background="{DynamicResource BgCard}"
                                 BorderBrush="{DynamicResource BgBorder}" BorderThickness="1"
                                 CornerRadius="8" Padding="20,18">
@@ -319,9 +889,8 @@
                             </Grid>
                         </Border>
 
-                        <!-- Service section -->
-                        <TextBlock Text="服务管理" FontSize="14" FontWeight="SemiBold"
-                                   Margin="0,24,0,12"/>
+                        <!-- Service -->
+                        <TextBlock Text="服务管理" FontSize="14" FontWeight="SemiBold" Margin="0,24,0,12"/>
                         <Border Background="{DynamicResource BgCard}"
                                 BorderBrush="{DynamicResource BgBorder}" BorderThickness="1"
                                 CornerRadius="8" Padding="20,18">
@@ -332,14 +901,11 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="DiskMonitor Service"
-                                                   FontSize="13" FontWeight="SemiBold"/>
-                                        <TextBlock x:Name="TxtServiceDetail"
-                                                   FontSize="11" Margin="0,4,0,0"
+                                        <TextBlock Text="DiskMonitor Service" FontSize="13" FontWeight="SemiBold"/>
+                                        <TextBlock x:Name="TxtServiceDetail" FontSize="11" Margin="0,4,0,0"
                                                    Foreground="{DynamicResource TxtSecond}"/>
                                     </StackPanel>
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal"
-                                                VerticalAlignment="Center">
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                         <Button x:Name="BtnInstall" Content="安装服务"
                                                 Style="{StaticResource PrimaryBtn}"
                                                 Margin="0,0,8,0" Click="BtnInstall_Click"/>
@@ -348,19 +914,16 @@
                                                 Click="BtnUninstall_Click"/>
                                     </StackPanel>
                                 </Grid>
-                                <Rectangle Height="1" Fill="{DynamicResource BgBorder}"
-                                           Margin="0,14"/>
+                                <Rectangle Height="1" Fill="{DynamicResource BgBorder}" Margin="0,14"/>
                                 <TextBlock Text="数据库路径" FontSize="11"
-                                           Foreground="{DynamicResource TxtSecond}"
-                                           Margin="0,0,0,6"/>
+                                           Foreground="{DynamicResource TxtSecond}" Margin="0,0,0,6"/>
                                 <TextBox x:Name="TxtDbPath" IsReadOnly="True"
                                          FontFamily="Consolas" FontSize="11"/>
                             </StackPanel>
                         </Border>
 
-                        <!-- Export section -->
-                        <TextBlock Text="数据导出" FontSize="14" FontWeight="SemiBold"
-                                   Margin="0,24,0,12"/>
+                        <!-- Export -->
+                        <TextBlock Text="数据导出" FontSize="14" FontWeight="SemiBold" Margin="0,24,0,12"/>
                         <Border Background="{DynamicResource BgCard}"
                                 BorderBrush="{DynamicResource BgBorder}" BorderThickness="1"
                                 CornerRadius="8" Padding="20,18">
@@ -370,8 +933,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="导出全部历史为 CSV"
-                                               FontSize="13" FontWeight="SemiBold"/>
+                                    <TextBlock Text="导出全部历史为 CSV" FontSize="13" FontWeight="SemiBold"/>
                                     <TextBlock FontSize="11" Margin="0,4,0,0"
                                                Foreground="{DynamicResource TxtSecond}"
                                                Text="将数据库中所有 I/O 记录导出为逗号分隔文件"/>
@@ -383,7 +945,132 @@
                             </Grid>
                         </Border>
 
-                        <!-- Danger zone — improved visual -->
+                        <!-- Analysis reference data -->
+                        <TextBlock Text="分析参考数据" FontSize="14" FontWeight="SemiBold" Margin="0,24,0,12"/>
+                        <Border Background="{DynamicResource BgCard}"
+                                BorderBrush="{DynamicResource BgBorder}" BorderThickness="1"
+                                CornerRadius="8" Padding="20,18">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="磁盘 I/O 历史统计" FontSize="13" FontWeight="SemiBold"/>
+                                        <TextBlock FontSize="11" Margin="0,4,0,0"
+                                                   Foreground="{DynamicResource TxtSecond}"
+                                                   Text="每日每盘总 I/O 的统计值（排除分析设置中的排除项）。去极值：IQR 法"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="刷新统计"
+                                            Style="{StaticResource GhostBtn}"
+                                            VerticalAlignment="Center"
+                                            Click="BtnRefreshStats_Click"/>
+                                </Grid>
+                                <DataGrid x:Name="GridDiskStats" MaxHeight="200"
+                                          VirtualizingPanel.IsVirtualizing="True">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="驱动器"   Binding="{Binding DriveDisplay}"      Width="110"/>
+                                        <DataGridTextColumn Header="磁盘型号" Binding="{Binding DiskModel}"         Width="170"/>
+                                        <DataGridTextColumn Header="数据天" Binding="{Binding DataDays}"            Width="65"/>
+                                        <DataGridTextColumn Header="历史最大" Binding="{Binding RawMaxDisplay}"     Width="100" SortMemberPath="RawMaxTotal">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                    <Setter Property="Padding" Value="0,0,10,0"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Header="去极值最大" Binding="{Binding FilteredMaxDisplay}" Width="100" SortMemberPath="FilteredMaxTotal">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                    <Setter Property="Padding" Value="0,0,10,0"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Header="均值" Binding="{Binding MeanDisplay}"   Width="90" SortMemberPath="MeanTotal">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                    <Setter Property="Padding" Value="0,0,10,0"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Header="中位数" Binding="{Binding MedianDisplay}" Width="90" SortMemberPath="MedianTotal">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                    <Setter Property="Padding" Value="0,0,10,0"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Header="前10%起点" Binding="{Binding Top10PctDisplay}" Width="100" SortMemberPath="Top10PctTotal">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                    <Setter Property="Padding" Value="0,0,10,0"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Header="最大5次（日期: 总量）" Binding="{Binding Top5Display}" Width="*" MinWidth="200"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <Rectangle Height="1" Fill="{DynamicResource BgBorder}" Margin="0,14"/>
+
+                                <TextBlock Text="自定义告警阈值（留空 = 使用自动阈值，支持逻辑盘/物理盘/全局）"
+                                           FontSize="12" FontWeight="SemiBold"
+                                           Margin="0,0,0,10" Foreground="{DynamicResource TxtSecond}"/>
+                                <!-- Row 1: drive selector + status -->
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="280"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="驱动器" VerticalAlignment="Center"
+                                               FontSize="12" Margin="0,0,8,0"
+                                               Foreground="{DynamicResource TxtSecond}"/>
+                                    <ComboBox Grid.Column="1" x:Name="CmbThresholdVolume" Height="32"
+                                              SelectionChanged="CmbThresholdVolume_SelectionChanged"/>
+                                    <TextBlock Grid.Column="2" x:Name="TxtThresholdStatus"
+                                               VerticalAlignment="Center" FontSize="11"
+                                               Foreground="{DynamicResource TxtMuted}" Margin="12,0,0,0"
+                                               TextWrapping="Wrap"/>
+                                </Grid>
+                                <!-- Row 2: three threshold inputs + buttons -->
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="读取 (GB)" VerticalAlignment="Center"
+                                               FontSize="12" Margin="0,0,6,0"
+                                               Foreground="{DynamicResource TxtSecond}"/>
+                                    <TextBox x:Name="TxtThresholdReadGB" Width="88" Height="32"
+                                             VerticalContentAlignment="Center"
+                                             ToolTip="每日读取量阈值 GB，留空=自动"/>
+                                    <TextBlock Text="写入 (GB)" VerticalAlignment="Center"
+                                               FontSize="12" Margin="12,0,6,0"
+                                               Foreground="{DynamicResource TxtSecond}"/>
+                                    <TextBox x:Name="TxtThresholdWriteGB" Width="88" Height="32"
+                                             VerticalContentAlignment="Center"
+                                             ToolTip="每日写入量阈值 GB，留空=自动"/>
+                                    <TextBlock Text="合计 (GB)" VerticalAlignment="Center"
+                                               FontSize="12" Margin="12,0,6,0"
+                                               Foreground="{DynamicResource TxtSecond}"/>
+                                    <TextBox x:Name="TxtThresholdTotalGB" Width="88" Height="32"
+                                             VerticalContentAlignment="Center"
+                                             ToolTip="每日合计阈值 GB，留空=自动（去极值最大 × 1.15）"/>
+                                    <TextBlock Text="留空=自动" VerticalAlignment="Center"
+                                               FontSize="11" Margin="8,0,16,0"
+                                               Foreground="{DynamicResource TxtMuted}"/>
+                                    <Button Content="保存" Style="{StaticResource PrimaryBtn}"
+                                            Click="BtnSaveThreshold_Click" Margin="0,0,8,0"/>
+                                    <Button Content="清除所有" Style="{StaticResource GhostBtn}"
+                                            Click="BtnClearThreshold_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Danger zone -->
                         <TextBlock Text="危险区域" FontSize="14" FontWeight="SemiBold"
                                    Margin="0,24,0,12"
                                    Foreground="{DynamicResource DangerTitleFg}"/>
@@ -391,7 +1078,6 @@
                                 BorderBrush="{DynamicResource DangerBorder}"
                                 BorderThickness="1" CornerRadius="8">
                             <Grid>
-                                <!-- Red left accent bar -->
                                 <Border Width="4" HorizontalAlignment="Left"
                                         Background="{DynamicResource DangerBorder}"
                                         CornerRadius="8,0,0,8"/>
@@ -402,10 +1088,8 @@
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="⚠  " FontSize="13"
-                                                       Foreground="{DynamicResource DangerTitleFg}"/>
-                                            <TextBlock Text="完全卸载" FontSize="13"
-                                                       FontWeight="SemiBold"
+                                            <TextBlock Text="⚠  " FontSize="13" Foreground="{DynamicResource DangerTitleFg}"/>
+                                            <TextBlock Text="完全卸载" FontSize="13" FontWeight="SemiBold"
                                                        Foreground="{DynamicResource DangerTitleFg}"/>
                                         </StackPanel>
                                         <TextBlock FontSize="11" Margin="20,4,0,0"

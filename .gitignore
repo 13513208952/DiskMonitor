@@ -27,3 +27,10 @@ packages/
 # OS
 Thumbs.db
 Desktop.ini
+
+# Local Claude Code memory
+.claude/
+
+# Local screenshots
+*.png
+*.jpg
