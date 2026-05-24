@@ -282,3 +282,53 @@ sc.exe delete DiskMonitor
 - **WindowsServices 包版本**：`Microsoft.Extensions.Hosting.WindowsServices` 必须固定为 `9.0.16`，最新版（10.x）会与 .NET 9 项目产生降级冲突
 - **Microsoft.Data.Sqlite 多语句**：`ExecuteNonQuery` 会执行分号分隔的所有语句，PRAGMA 批处理和 DELETE+INSERT 组合均正确执行
 - **VolumeDiskExtents 缓冲区大小**：传 `Marshal.SizeOf<VolumeDiskExtents>()` = 32 字节，刚好容纳 1 个 Extent。返回 `ERROR_MORE_DATA(234)` 即表示有 2+ Extents = RAID
+- **WPF FindResource 崩溃陷阱**：`FindResource("Green")` 等找不到键时抛 `ResourceReferenceKeyNotFoundException`。若在 `async void` 定时器回调中抛出，会 crash 整个进程（表现为"运行一段时间后自动关闭"）。状态点颜色资源（Green/Red/Orange）需定义在 App.xaml 静态资源中，不可只在主题文件里
+- **DataGrid 字符串排序**：`TotalDisplay`/`ReadDisplay`/`WriteDisplay` 是格式化字符串，直接排序按字典序（"4.50 GB" < "456.7 MB"）。必须在 `DataGridTextColumn` 上加 `SortMemberPath="TotalBytes"` 等指向原始 `long` 字段
+- **explorer.exe /select 极慢**：用 `explorer.exe /select,"path"` 打开文件位置会触发 COM/DDE 进程间握手，可能阻塞数秒。应改为 `Process.Start(new ProcessStartInfo { FileName = dir, UseShellExecute = true })` 直接打开目录
+- **完全卸载必须读注册表路径**：卸载前通过 `HKLM\SYSTEM\CurrentControlSet\Services\DiskMonitor\ImagePath` 读取实际注册的二进制路径，才能正确删除可执行文件目录（不受安装路径变化影响）。还需清理 Event Log 源：`reg delete HKLM\...\EventLog\Application\DiskMonitor /f`
+
+---
+
+## 便携包发布
+
+### 构建便携包
+
+```powershell
+.\publish.ps1
+```
+
+输出到 `publish\DiskMonitor\`，结构：
+```
+publish\DiskMonitor\
+├── DiskMonitor.Frontend.exe   # 双击运行
+├── (前端依赖，含完整 .NET 9 运行时)
+└── service\
+    ├── DiskMonitor.Service.exe
+    └── (服务依赖，含完整 .NET 9 运行时)
+```
+
+- 前端查找服务 exe 顺序：`service\` 子目录 → 同级目录 → 开发布局
+- 两个子项目各自 self-contained，运行时不共享（避免 DLL 冲突）
+
+### GitHub 仓库
+
+`https://github.com/13513208952/DiskMonitor`
+
+发布新版本：
+```powershell
+.\publish.ps1
+7z a DiskMonitor-vX.Y.Z-win-x64.7z .\publish\DiskMonitor\
+gh release create vX.Y.Z DiskMonitor-vX.Y.Z-win-x64.7z --title "vX.Y.Z" --notes "变更说明"
+```
+
+---
+
+## 前端功能清单（v1.0.0）
+
+- **今日 Tab**：实时 I/O 统计、3 张统计卡、DataGrid（进程/盘符/卷标/磁盘型号/读写/合计）
+- **历史 Tab**：日期范围查询、CSV 导出
+- **设置 Tab**：主题切换（6 套）、服务安装/启停/卸载、完全卸载
+- **右键菜单**：打开文件所在目录（`UseShellExecute` 直开目录）、复制进程路径
+- **DataGrid 排序**：所有列可点击正/倒序，读写/合计按字节数排序（非字符串）
+- **主题持久化**：保存到 `%AppData%\DiskMonitor\theme.txt`
+- **服务状态轮询**：10 秒定时器，定时器回调有 try/catch 防崩溃
