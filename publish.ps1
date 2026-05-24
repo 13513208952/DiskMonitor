@@ -27,6 +27,7 @@ dotnet publish "$root\DiskMonitor.Frontend\DiskMonitor.Frontend.csproj" `
     -o $out
 
 if ($LASTEXITCODE -ne 0) { Write-Host "前端发布失败！" -ForegroundColor Red; exit 1 }
+if (-not (Test-Path "$out\DiskMonitor.Frontend.exe")) { Write-Host "前端 exe 未生成，发布失败！" -ForegroundColor Red; exit 1 }
 
 # 发布服务（Worker，net9.0，win-x64 self-contained）到 service\ 子目录
 Write-Host "`n[2/2] 发布服务..." -ForegroundColor Green
@@ -40,6 +41,7 @@ dotnet publish "$root\DiskMonitor.Service\DiskMonitor.Service.csproj" `
     -o $svc
 
 if ($LASTEXITCODE -ne 0) { Write-Host "服务发布失败！" -ForegroundColor Red; exit 1 }
+if (-not (Test-Path "$svc\DiskMonitor.Service.exe")) { Write-Host "服务 exe 未生成，发布失败！" -ForegroundColor Red; exit 1 }
 
 # 清理不需要的文件
 Write-Host "`n清理冗余文件..." -ForegroundColor Yellow
