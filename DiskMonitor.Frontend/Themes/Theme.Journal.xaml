@@ -1,0 +1,24 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Journal — 暖白·红 (Bootswatch Journal) -->
+    <SolidColorBrush x:Key="BgBase"      Color="#F5F0E8"/>
+    <SolidColorBrush x:Key="BgSurface"   Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="BgCard"      Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="BgHover"     Color="#EDE6DC"/>
+    <SolidColorBrush x:Key="BgSelected"  Color="#FAD8D6"/>
+    <SolidColorBrush x:Key="BgBorder"    Color="#D4C8BC"/>
+    <SolidColorBrush x:Key="TxtPrimary"  Color="#333333"/>
+    <SolidColorBrush x:Key="TxtSecond"   Color="#777777"/>
+    <SolidColorBrush x:Key="TxtMuted"    Color="#AAAAAA"/>
+    <SolidColorBrush x:Key="Accent"      Color="#EB6864"/>
+    <SolidColorBrush x:Key="AccentHover" Color="#D95550"/>
+    <SolidColorBrush x:Key="AccentLight" Color="#C03030"/>
+    <SolidColorBrush x:Key="DataGridAlt" Color="#F8F3EC"/>
+    <SolidColorBrush x:Key="DataGridHdr" Color="#EDE6DC"/>
+    <SolidColorBrush x:Key="WriteFg"     Color="#8B5000"/>
+    <SolidColorBrush x:Key="CountFg"     Color="#1E6B2E"/>
+    <SolidColorBrush x:Key="DangerBg"    Color="#FFF0EE"/>
+    <SolidColorBrush x:Key="DangerBorder" Color="#F0BCBA"/>
+    <SolidColorBrush x:Key="DangerTitleFg" Color="#A02020"/>
+    <SolidColorBrush x:Key="DangerDescFg"  Color="#8B3030"/>
+</ResourceDictionary>
