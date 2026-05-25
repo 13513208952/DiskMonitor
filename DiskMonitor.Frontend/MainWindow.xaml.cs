@@ -47,6 +47,11 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<ShellExtensionEntry>  _ghostItems          = [];
     private readonly ObservableCollection<ShellWhitelistEntryVm> _shellWhitelistItems = [];
 
+    // Service monitor tab
+    private readonly ObservableCollection<SvcHostServiceEntry>  _svcItems         = [];
+    private readonly ObservableCollection<ExplorerDayBucket>    _svchostDayItems  = [];
+    private DispatcherTimer? _svcRefreshTimer;
+
     // ── Init ────────────────────────────────────────────────────
 
     public MainWindow()
@@ -68,6 +73,8 @@ public partial class MainWindow : Window
         GridExplorerDays.ItemsSource    = _explorerDayItems;
         GridGhosts.ItemsSource          = _ghostItems;
         GridShellWhitelist.ItemsSource  = _shellWhitelistItems;
+        GridSvcHostServices.ItemsSource = _svcItems;
+        SvchostDayChart.ItemsSource     = _svchostDayItems;
 
         TxtDbPath.Text      = _dbPath;
         TxtTodayDate.Text   = $"今日 · {DateTime.Today:yyyy-MM-dd}";
@@ -118,6 +125,7 @@ public partial class MainWindow : Window
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
         _timer.Stop();
+        _svcRefreshTimer?.Stop();
         _db?.Dispose();
     }
 
@@ -1136,10 +1144,16 @@ public partial class MainWindow : Window
 
     private void SubTab_Checked(object sender, RoutedEventArgs e)
     {
-        if (PanelSubIo == null || PanelSubShell == null) return;
-        bool isIo = RbSubIo?.IsChecked == true;
-        PanelSubIo.Visibility    = isIo ? Visibility.Visible   : Visibility.Collapsed;
-        PanelSubShell.Visibility = isIo ? Visibility.Collapsed : Visibility.Visible;
+        if (PanelSubIo == null || PanelSubShell == null || PanelSubService == null) return;
+        bool isIo      = RbSubIo?.IsChecked      == true;
+        bool isShell   = RbSubShell?.IsChecked   == true;
+        bool isService = RbSubService?.IsChecked == true;
+        PanelSubIo.Visibility      = isIo      ? Visibility.Visible : Visibility.Collapsed;
+        PanelSubShell.Visibility   = isShell   ? Visibility.Visible : Visibility.Collapsed;
+        PanelSubService.Visibility = isService ? Visibility.Visible : Visibility.Collapsed;
+
+        if (isShell   && _repo != null) _ = LoadExplorerTodayInfoAsync();
+        if (isService && _repo != null) _ = LoadSvchostTodayInfoAsync();
     }
 
     // ── Plugin detection ──────────────────────────────────────────
@@ -1232,38 +1246,40 @@ public partial class MainWindow : Window
         if (_repo == null) return;
         var to   = DateTime.Today.ToString("yyyy-MM-dd");
         var from = DateTime.Today.AddDays(-6).ToString("yyyy-MM-dd");
-
         var records = await Task.Run(() => _repo.QueryByDateRange(from, to));
+        BuildDayBuckets(records, "explorer.exe", _explorerDayItems);
+    }
 
-        var buckets = Enumerable.Range(0, 7)
-            .Select(i =>
+    private static void BuildDayBuckets(
+        IEnumerable<IoRecord> records, string processName,
+        ObservableCollection<ExplorerDayBucket> target)
+    {
+        var list = records.ToList();
+        var buckets = Enumerable.Range(0, 7).Select(i =>
+        {
+            var d = DateTime.Today.AddDays(-6 + i).ToString("yyyy-MM-dd");
+            var dayRecs = list.Where(r =>
+                r.Date == d &&
+                r.ProcessName.Equals(processName, StringComparison.OrdinalIgnoreCase)).ToList();
+            return new ExplorerDayBucket
             {
-                var d = DateTime.Today.AddDays(-6 + i).ToString("yyyy-MM-dd");
-                var dayRecs = records.Where(r =>
-                    r.Date == d &&
-                    r.ProcessName.Equals("explorer.exe", StringComparison.OrdinalIgnoreCase)).ToList();
-                return new ExplorerDayBucket
-                {
-                    Date       = d,
-                    ReadBytes  = dayRecs.Sum(r => r.ReadBytes),
-                    WriteBytes = dayRecs.Sum(r => r.WriteBytes),
-                };
-            })
-            .ToList();
+                Date       = d,
+                ReadBytes  = dayRecs.Sum(r => r.ReadBytes),
+                WriteBytes = dayRecs.Sum(r => r.WriteBytes),
+            };
+        }).ToList();
 
-        long maxTotal = buckets.Count > 0 ? buckets.Max(b => b.TotalBytes) : 0;
+        long maxTotal = buckets.Max(b => b.TotalBytes);
         const double MaxBarH = 60.0;
         if (maxTotal > 0)
-        {
             foreach (var b in buckets)
             {
                 b.ReadBarHeight  = b.ReadBytes  / (double)maxTotal * MaxBarH;
                 b.WriteBarHeight = b.WriteBytes / (double)maxTotal * MaxBarH;
             }
-        }
 
-        _explorerDayItems.Clear();
-        foreach (var b in buckets) _explorerDayItems.Add(b);
+        target.Clear();
+        foreach (var b in buckets) target.Add(b);
     }
 
     private void ShellFilterChanged(object sender, RoutedEventArgs e)
@@ -1271,6 +1287,143 @@ public partial class MainWindow : Window
         if (_allShellEntries.Count == 0) return;
         ApplyShellFilters();
         TxtShellStatus.Text = $"共 {_allShellEntries.Count} 条注册记录，显示 {_shellItems.Count} 条";
+    }
+
+    private async Task LoadExplorerTodayInfoAsync()
+    {
+        if (_repo == null) return;
+        try
+        {
+            var today = DateTime.Today.ToString("yyyy-MM-dd");
+            var records = await Task.Run(() => _repo.QueryByDateRange(today, today));
+            var expl = records
+                .Where(r => r.ProcessName.Equals("explorer.exe", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            long r = expl.Sum(x => x.ReadBytes);
+            long w = expl.Sum(x => x.WriteBytes);
+            TxtExplorerTodayInfo.Text = $"今日 explorer: 读 {IoRecordVm.Fmt(r)}  写 {IoRecordVm.Fmt(w)}";
+        }
+        catch { TxtExplorerTodayInfo.Text = ""; }
+    }
+
+    // ── Service monitor tab ───────────────────────────────────────
+
+    private async Task LoadSvchostTodayInfoAsync()
+    {
+        if (_repo == null) return;
+        try
+        {
+            var today = DateTime.Today.ToString("yyyy-MM-dd");
+            var records = await Task.Run(() => _repo.QueryByDateRange(today, today));
+            var svc = records
+                .Where(r => r.ProcessName.Equals("svchost.exe", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            long r = svc.Sum(x => x.ReadBytes);
+            long w = svc.Sum(x => x.WriteBytes);
+            TxtSvchostTodayInfo.Text = $"今日 svchost: 读 {IoRecordVm.Fmt(r)}  写 {IoRecordVm.Fmt(w)}";
+        }
+        catch { TxtSvchostTodayInfo.Text = ""; }
+    }
+
+    private async void BtnLoadServices_Click(object sender, RoutedEventArgs e)
+    {
+        BtnLoadServices.IsEnabled = false;
+        TxtServiceStatus.Text     = "加载中…";
+        TxtServiceOverlay.Text    = "";
+
+        try
+        {
+            var entries = await Task.Run(() => SvcHostScanner.Scan());
+
+            _svcItems.Clear();
+            foreach (var s in entries) _svcItems.Add(s);
+
+            TxtServiceStatus.Text  = $"共 {_svcItems.Count} 个 svchost 托管服务";
+            TxtServiceOverlay.Text = _svcItems.Count == 0 ? "未找到 svchost 托管服务" : "";
+
+            await LoadSvchostTodayInfoAsync();
+            await LoadSvchostChartAsync();
+        }
+        catch (Exception ex)
+        {
+            TxtServiceStatus.Text  = $"加载失败: {ex.Message}";
+            TxtServiceOverlay.Text = "加载失败";
+        }
+        finally
+        {
+            BtnLoadServices.IsEnabled = true;
+        }
+    }
+
+    private void BtnToggleSvcRefresh_Click(object sender, RoutedEventArgs e)
+    {
+        if (_svcRefreshTimer == null || !_svcRefreshTimer.IsEnabled)
+        {
+            _svcRefreshTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _svcRefreshTimer.Tick -= SvcRefreshTimer_Tick;
+            _svcRefreshTimer.Tick += SvcRefreshTimer_Tick;
+            _svcRefreshTimer.Start();
+            BtnToggleSvcRefresh.Content = "停止刷新";
+        }
+        else
+        {
+            _svcRefreshTimer.Stop();
+            BtnToggleSvcRefresh.Content = "开启实时刷新";
+        }
+    }
+
+    private async void SvcRefreshTimer_Tick(object? sender, EventArgs e)
+    {
+        try
+        {
+            var entries = await Task.Run(() => SvcHostScanner.Scan());
+            _svcItems.Clear();
+            foreach (var s in entries) _svcItems.Add(s);
+            TxtServiceStatus.Text = $"共 {_svcItems.Count} 个 svchost 托管服务（实时刷新中）";
+        }
+        catch { }
+    }
+
+    private async Task LoadSvchostChartAsync()
+    {
+        if (_repo == null) return;
+        var to   = DateTime.Today.ToString("yyyy-MM-dd");
+        var from = DateTime.Today.AddDays(-6).ToString("yyyy-MM-dd");
+        var records = await Task.Run(() => _repo.QueryByDateRange(from, to));
+        BuildDayBuckets(records, "svchost.exe", _svchostDayItems);
+    }
+
+    private void SvcHostOpenDir_Click(object sender, RoutedEventArgs e)
+    {
+        var entry = GetSvcHostEntry(sender);
+        if (entry == null) return;
+        if (string.IsNullOrEmpty(entry.ServiceDll))
+        {
+            MessageBox.Show("此服务没有关联的 ServiceDll 路径。",
+                "无路径", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        var dir = Path.GetDirectoryName(entry.ServiceDll);
+        if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir))
+        {
+            MessageBox.Show($"目录不存在：\n{dir ?? entry.ServiceDll}",
+                "目录未找到", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        Process.Start(new ProcessStartInfo { FileName = dir, UseShellExecute = true });
+    }
+
+    private void SvcHostCopyPath_Click(object sender, RoutedEventArgs e)
+    {
+        var entry = GetSvcHostEntry(sender);
+        if (entry == null) return;
+        Clipboard.SetText(string.IsNullOrEmpty(entry.ServiceDll) ? entry.ServiceName : entry.ServiceDll);
+    }
+
+    private static SvcHostServiceEntry? GetSvcHostEntry(object menuItemSender)
+    {
+        var menu = ((MenuItem)menuItemSender).Parent as ContextMenu;
+        return (menu?.PlacementTarget as DataGrid)?.SelectedItem as SvcHostServiceEntry;
     }
 
     // ── Whitelist handlers ────────────────────────────────────────
