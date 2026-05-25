@@ -552,9 +552,7 @@
                           Background="{DynamicResource BgBase}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="2*" MinHeight="120"/>
-                            <RowDefinition Height="1"/>
-                            <RowDefinition Height="3*" MinHeight="180"/>
+                            <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
                         <!-- Toolbar -->
@@ -577,49 +575,46 @@
                             </DockPanel>
                         </Border>
 
-                        <!-- Main DataGrid -->
-                        <Grid Grid.Row="1" Margin="20,12,20,8">
-                            <DataGrid x:Name="GridShellExt"
-                                      VirtualizingPanel.IsVirtualizing="True"
-                                      PreviewMouseRightButtonDown="Grid_PreviewMouseRightButtonDown">
-                                <DataGrid.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="打开文件所在目录" Click="ShellExtOpenDir_Click"/>
-                                        <MenuItem Header="复制路径"         Click="ShellExtCopyPath_Click"/>
-                                        <Separator/>
-                                        <MenuItem Header="将此 DLL 加入白名单"  Click="ShellExtWhitelistFile_Click"/>
-                                        <MenuItem Header="将此厂商加入白名单"   Click="ShellExtWhitelistVendor_Click"/>
-                                    </ContextMenu>
-                                </DataGrid.ContextMenu>
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="DLL 名称" Binding="{Binding DllName}"           Width="180" MinWidth="100"/>
-                                    <DataGridTextColumn Header="厂商"     Binding="{Binding VendorName}"        Width="160" MinWidth="80"/>
-                                    <DataGridTextColumn Header="创建时间" Binding="{Binding CreationDisplay}"   Width="128" SortMemberPath="FileCreationTime"/>
-                                    <DataGridTextColumn Header="最终修改" Binding="{Binding LastModifiedDisplay}" Width="128" SortMemberPath="LastModifiedTime"/>
-                                    <DataGridTextColumn Header=""         Binding="{Binding GhostLabel}"         Width="80">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="{DynamicResource Orange}"/>
-                                                <Setter Property="FontWeight" Value="SemiBold"/>
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="路径" Binding="{Binding PathDisplay}" Width="*" MinWidth="200"/>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                            <TextBlock x:Name="TxtShellOverlay"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       Foreground="{DynamicResource TxtMuted}" FontSize="13"
-                                       IsHitTestVisible="False"/>
-                        </Grid>
-
-                        <!-- Separator -->
-                        <Border Grid.Row="2" Background="{DynamicResource BgBorder}"/>
-
-                        <!-- Analysis + Whitelist section -->
-                        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto"
+                        <!-- All scrollable content (DLL list + analysis) -->
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
                                       Background="{DynamicResource BgBase}">
-                            <StackPanel Margin="20,14,20,14">
+                            <StackPanel Margin="20,12,20,14">
+
+                                <!-- DLL DataGrid -->
+                                <Grid Margin="0,0,0,12">
+                                    <DataGrid x:Name="GridShellExt" MaxHeight="280"
+                                              VirtualizingPanel.IsVirtualizing="True"
+                                              PreviewMouseRightButtonDown="Grid_PreviewMouseRightButtonDown">
+                                        <DataGrid.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="打开文件所在目录" Click="ShellExtOpenDir_Click"/>
+                                                <MenuItem Header="复制路径"         Click="ShellExtCopyPath_Click"/>
+                                                <Separator/>
+                                                <MenuItem Header="将此 DLL 加入白名单"  Click="ShellExtWhitelistFile_Click"/>
+                                                <MenuItem Header="将此厂商加入白名单"   Click="ShellExtWhitelistVendor_Click"/>
+                                            </ContextMenu>
+                                        </DataGrid.ContextMenu>
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="DLL 名称" Binding="{Binding DllName}"             Width="180" MinWidth="100"/>
+                                            <DataGridTextColumn Header="厂商"     Binding="{Binding VendorName}"          Width="160" MinWidth="80"/>
+                                            <DataGridTextColumn Header="创建时间" Binding="{Binding CreationDisplay}"     Width="128" SortMemberPath="FileCreationTime"/>
+                                            <DataGridTextColumn Header="最终修改" Binding="{Binding LastModifiedDisplay}" Width="128" SortMemberPath="LastModifiedTime"/>
+                                            <DataGridTextColumn Header=""         Binding="{Binding GhostLabel}"           Width="80">
+                                                <DataGridTextColumn.ElementStyle>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{DynamicResource Orange}"/>
+                                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                                    </Style>
+                                                </DataGridTextColumn.ElementStyle>
+                                            </DataGridTextColumn>
+                                            <DataGridTextColumn Header="路径" Binding="{Binding PathDisplay}" Width="*" MinWidth="200"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                    <TextBlock x:Name="TxtShellOverlay"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TxtMuted}" FontSize="13"
+                                               IsHitTestVisible="False"/>
+                                </Grid>
 
                                 <!-- Explorer 7-day I/O -->
                                 <TextBlock Text="Explorer 近7天 I/O" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
@@ -636,16 +631,20 @@
                                                 <DataTemplate>
                                                     <Grid Width="68" Margin="2,0" ToolTip="{Binding Tooltip}">
                                                         <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto"/>
                                                             <RowDefinition Height="64"/>
                                                             <RowDefinition Height="Auto"/>
                                                         </Grid.RowDefinitions>
-                                                        <Grid Grid.Row="0" VerticalAlignment="Bottom">
+                                                        <TextBlock Grid.Row="0" Text="{Binding TotalDisplay}"
+                                                                   HorizontalAlignment="Center" FontSize="9"
+                                                                   Foreground="{DynamicResource TxtSecond}" Margin="0,0,0,2"/>
+                                                        <Grid Grid.Row="1" VerticalAlignment="Bottom">
                                                             <StackPanel VerticalAlignment="Bottom">
                                                                 <Rectangle Height="{Binding ReadBarHeight}"  Fill="{DynamicResource AccentLight}"/>
                                                                 <Rectangle Height="{Binding WriteBarHeight}" Fill="{DynamicResource WriteFg}"/>
                                                             </StackPanel>
                                                         </Grid>
-                                                        <TextBlock Grid.Row="1" Text="{Binding DayLabel}"
+                                                        <TextBlock Grid.Row="2" Text="{Binding DayLabel}"
                                                                    HorizontalAlignment="Center" FontSize="10"
                                                                    Foreground="{DynamicResource TxtMuted}" Margin="0,3,0,0"/>
                                                     </Grid>
@@ -895,16 +894,20 @@
                                         <DataTemplate>
                                             <Grid Width="68" Margin="2,0" ToolTip="{Binding Tooltip}">
                                                 <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
                                                     <RowDefinition Height="64"/>
                                                     <RowDefinition Height="Auto"/>
                                                 </Grid.RowDefinitions>
-                                                <Grid Grid.Row="0" VerticalAlignment="Bottom">
+                                                <TextBlock Grid.Row="0" Text="{Binding TotalDisplay}"
+                                                           HorizontalAlignment="Center" FontSize="9"
+                                                           Foreground="{DynamicResource TxtSecond}" Margin="0,0,0,2"/>
+                                                <Grid Grid.Row="1" VerticalAlignment="Bottom">
                                                     <StackPanel VerticalAlignment="Bottom">
                                                         <Rectangle Height="{Binding ReadBarHeight}"  Fill="{DynamicResource AccentLight}"/>
                                                         <Rectangle Height="{Binding WriteBarHeight}" Fill="{DynamicResource WriteFg}"/>
                                                     </StackPanel>
                                                 </Grid>
-                                                <TextBlock Grid.Row="1" Text="{Binding DayLabel}"
+                                                <TextBlock Grid.Row="2" Text="{Binding DayLabel}"
                                                            HorizontalAlignment="Center" FontSize="10"
                                                            Foreground="{DynamicResource TxtMuted}" Margin="0,3,0,0"/>
                                             </Grid>
