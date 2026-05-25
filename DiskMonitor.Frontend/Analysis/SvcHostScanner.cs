@@ -1,4 +1,6 @@
 using Microsoft.Win32;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
 
@@ -10,6 +12,8 @@ public sealed class SvcHostServiceEntry
     public string ServiceName { get; init; } = "";
     public string DisplayName { get; init; } = "";
     public string ServiceDll  { get; init; } = "";
+    public string VendorName  { get; init; } = "";
+    public bool   IsMicrosoft { get; init; }
 
     public string PidDisplay => Pid > 0 ? Pid.ToString() : "—";
     public string DllDisplay => string.IsNullOrEmpty(ServiceDll) ? "（未找到）" : ServiceDll;
@@ -63,12 +67,27 @@ public static class SvcHostScanner
 
                 pidMap.TryGetValue(name, out int pid);
 
+                string vendorName = "";
+                bool   isMicrosoft = false;
+                if (!string.IsNullOrEmpty(serviceDll) && File.Exists(serviceDll))
+                {
+                    try
+                    {
+                        var fvi = FileVersionInfo.GetVersionInfo(serviceDll);
+                        vendorName  = fvi.CompanyName?.Trim() ?? "";
+                        isMicrosoft = IsMicrosoftVendor(vendorName);
+                    }
+                    catch { }
+                }
+
                 result.Add(new SvcHostServiceEntry
                 {
                     Pid         = pid,
                     ServiceName = name,
                     DisplayName = displayName,
                     ServiceDll  = serviceDll,
+                    VendorName  = vendorName,
+                    IsMicrosoft = isMicrosoft,
                 });
             }
             catch { }
@@ -76,6 +95,10 @@ public static class SvcHostScanner
 
         return [.. result.OrderBy(e => e.ServiceName, StringComparer.OrdinalIgnoreCase)];
     }
+
+    private static bool IsMicrosoftVendor(string vendor) =>
+        !string.IsNullOrEmpty(vendor) &&
+        vendor.Contains("Microsoft", StringComparison.OrdinalIgnoreCase);
 
     private static Dictionary<string, int> BuildPidMap()
     {

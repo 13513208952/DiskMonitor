@@ -855,9 +855,7 @@
                           Background="{DynamicResource BgBase}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="1"/>
-                            <RowDefinition Height="*" MinHeight="150"/>
+                            <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
                         <!-- Toolbar -->
@@ -873,83 +871,177 @@
                                            Foreground="{DynamicResource TxtSecond}" Margin="0,0,16,0"/>
                                 <Button DockPanel.Dock="Right" x:Name="BtnToggleSvcRefresh"
                                         Content="开启实时刷新" Style="{StaticResource GhostBtn}"
-                                        Click="BtnToggleSvcRefresh_Click"/>
+                                        Click="BtnToggleSvcRefresh_Click" Margin="8,0,0,0"/>
+                                <CheckBox DockPanel.Dock="Right" x:Name="ChkHideMicrosoftSvc"
+                                          Content="隐藏微软组件" VerticalAlignment="Center" Margin="16,0,0,0"
+                                          Checked="SvcFilterChanged" Unchecked="SvcFilterChanged"/>
                                 <TextBlock x:Name="TxtServiceStatus" VerticalAlignment="Center"
                                            Foreground="{DynamicResource TxtMuted}" FontSize="12"
                                            Text="点击「加载服务列表」加载数据"/>
                             </DockPanel>
                         </Border>
 
-                        <!-- Svchost 7-day chart -->
-                        <Border Grid.Row="1" Background="{DynamicResource BgCard}"
-                                BorderBrush="{DynamicResource BgBorder}" BorderThickness="1"
-                                CornerRadius="8" Padding="16,12" Margin="20,12,20,8">
-                            <StackPanel>
+                        <!-- Scrollable content -->
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                      Background="{DynamicResource BgBase}">
+                            <StackPanel Margin="20,12,20,14">
+
+                                <!-- Svchost 7-day chart -->
                                 <TextBlock Text="Svchost 近7天 I/O" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                <ItemsControl x:Name="SvchostDayChart" Margin="0,0,0,4">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Width="68" Margin="2,0" ToolTip="{Binding Tooltip}">
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="64"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <TextBlock Grid.Row="0" Text="{Binding TotalDisplay}"
-                                                           HorizontalAlignment="Center" FontSize="9"
-                                                           Foreground="{DynamicResource TxtSecond}" Margin="0,0,0,2"/>
-                                                <Grid Grid.Row="1" VerticalAlignment="Bottom">
-                                                    <StackPanel VerticalAlignment="Bottom">
-                                                        <Rectangle Height="{Binding ReadBarHeight}"  Fill="{DynamicResource AccentLight}"/>
-                                                        <Rectangle Height="{Binding WriteBarHeight}" Fill="{DynamicResource WriteFg}"/>
-                                                    </StackPanel>
-                                                </Grid>
-                                                <TextBlock Grid.Row="2" Text="{Binding DayLabel}"
-                                                           HorizontalAlignment="Center" FontSize="10"
-                                                           Foreground="{DynamicResource TxtMuted}" Margin="0,3,0,0"/>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <StackPanel Orientation="Horizontal" Margin="4,0,0,0">
-                                    <Rectangle Width="12" Height="12" Fill="{DynamicResource AccentLight}" VerticalAlignment="Center"/>
-                                    <TextBlock Text=" 读取" FontSize="11" Foreground="{DynamicResource TxtSecond}" Margin="0,0,14,0"/>
-                                    <Rectangle Width="12" Height="12" Fill="{DynamicResource WriteFg}" VerticalAlignment="Center"/>
-                                    <TextBlock Text=" 写入" FontSize="11" Foreground="{DynamicResource TxtSecond}"/>
-                                </StackPanel>
+                                <Border Background="{DynamicResource BgCard}"
+                                        BorderBrush="{DynamicResource BgBorder}" BorderThickness="1"
+                                        CornerRadius="8" Padding="16,12" Margin="0,0,0,14">
+                                    <StackPanel>
+                                        <ItemsControl x:Name="SvchostDayChart" Margin="0,0,0,4">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Width="68" Margin="2,0" ToolTip="{Binding Tooltip}">
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto"/>
+                                                            <RowDefinition Height="64"/>
+                                                            <RowDefinition Height="Auto"/>
+                                                        </Grid.RowDefinitions>
+                                                        <TextBlock Grid.Row="0" Text="{Binding TotalDisplay}"
+                                                                   HorizontalAlignment="Center" FontSize="9"
+                                                                   Foreground="{DynamicResource TxtSecond}" Margin="0,0,0,2"/>
+                                                        <Grid Grid.Row="1" VerticalAlignment="Bottom">
+                                                            <StackPanel VerticalAlignment="Bottom">
+                                                                <Rectangle Height="{Binding ReadBarHeight}"  Fill="{DynamicResource AccentLight}"/>
+                                                                <Rectangle Height="{Binding WriteBarHeight}" Fill="{DynamicResource WriteFg}"/>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                        <TextBlock Grid.Row="2" Text="{Binding DayLabel}"
+                                                                   HorizontalAlignment="Center" FontSize="10"
+                                                                   Foreground="{DynamicResource TxtMuted}" Margin="0,3,0,0"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <StackPanel Orientation="Horizontal" Margin="4,0,0,0">
+                                            <Rectangle Width="12" Height="12" Fill="{DynamicResource AccentLight}" VerticalAlignment="Center"/>
+                                            <TextBlock Text=" 读取" FontSize="11" Foreground="{DynamicResource TxtSecond}" Margin="0,0,14,0"/>
+                                            <Rectangle Width="12" Height="12" Fill="{DynamicResource WriteFg}" VerticalAlignment="Center"/>
+                                            <TextBlock Text=" 写入" FontSize="11" Foreground="{DynamicResource TxtSecond}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Service DataGrid -->
+                                <TextBlock Text="svchost 托管服务列表" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <Grid Margin="0,0,0,12">
+                                    <DataGrid x:Name="GridSvcHostServices" MaxHeight="300"
+                                              VirtualizingPanel.IsVirtualizing="True"
+                                              PreviewMouseRightButtonDown="Grid_PreviewMouseRightButtonDown">
+                                        <DataGrid.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="打开 DLL 所在目录" Click="SvcHostOpenDir_Click"/>
+                                                <MenuItem Header="复制 DLL 路径"     Click="SvcHostCopyPath_Click"/>
+                                                <Separator/>
+                                                <MenuItem Header="将此厂商加入白名单" Click="SvcHostWhitelistVendor_Click"/>
+                                                <MenuItem Header="将此服务加入白名单" Click="SvcHostWhitelistService_Click"/>
+                                            </ContextMenu>
+                                        </DataGrid.ContextMenu>
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="PID"       Binding="{Binding PidDisplay}"  Width="65"/>
+                                            <DataGridTextColumn Header="服务名"    Binding="{Binding ServiceName}" Width="180" MinWidth="100"/>
+                                            <DataGridTextColumn Header="厂商"      Binding="{Binding VendorName}"  Width="150" MinWidth="80"/>
+                                            <DataGridTextColumn Header="显示名称"  Binding="{Binding DisplayName}" Width="*"   MinWidth="150"/>
+                                            <DataGridTextColumn Header="ServiceDll 路径" Binding="{Binding DllDisplay}" Width="2*" MinWidth="200"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                    <TextBlock x:Name="TxtServiceOverlay"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TxtMuted}" FontSize="13"
+                                               IsHitTestVisible="False"
+                                               Text="点击「加载服务列表」加载数据"/>
+                                </Grid>
+
+                                <!-- Whitelist card -->
+                                <TextBlock Text="白名单" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <Border Background="{DynamicResource BgCard}"
+                                        BorderBrush="{DynamicResource BgBorder}" BorderThickness="1"
+                                        CornerRadius="8" Padding="16,14" Margin="0,0,0,14">
+                                    <StackPanel>
+                                        <CheckBox x:Name="ChkSvcExcludeSystemFolder"
+                                                  Content="一键排除系统文件夹（%SystemRoot% 及 %SystemRoot%\System32）内全部 DLL"
+                                                  Margin="0,0,0,12"
+                                                  Checked="ChkSvcExcludeSystemFolder_Changed"
+                                                  Unchecked="ChkSvcExcludeSystemFolder_Changed"/>
+                                        <!-- Vendor -->
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="56"/>
+                                                <ColumnDefinition Width="220"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="厂商" VerticalAlignment="Center"
+                                                       FontSize="12" Foreground="{DynamicResource TxtSecond}"/>
+                                            <ComboBox Grid.Column="1" x:Name="CmbSvcWhitelistVendor" Height="32" IsEditable="True"/>
+                                            <Button Grid.Column="2" Content="加入白名单" Margin="8,0,0,0"
+                                                    Style="{StaticResource GhostBtn}"
+                                                    Click="BtnSvcWhitelistVendor_Click"/>
+                                        </Grid>
+                                        <!-- Service name -->
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="56"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="服务名" VerticalAlignment="Center"
+                                                       FontSize="12" Foreground="{DynamicResource TxtSecond}"/>
+                                            <TextBox Grid.Column="1" x:Name="TxtSvcWhitelistService" Height="32"
+                                                     VerticalContentAlignment="Center"/>
+                                            <Button Grid.Column="2" Content="加入白名单" Margin="8,0,0,0"
+                                                    Style="{StaticResource GhostBtn}"
+                                                    Click="BtnSvcWhitelistService_Click"/>
+                                        </Grid>
+                                        <!-- Directory -->
+                                        <Grid Margin="0,0,0,12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="56"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="目录" VerticalAlignment="Center"
+                                                       FontSize="12" Foreground="{DynamicResource TxtSecond}"/>
+                                            <TextBox Grid.Column="1" x:Name="TxtSvcWhitelistDir" Height="32"
+                                                     VerticalContentAlignment="Center"/>
+                                            <Button Grid.Column="2" Content="浏览…" Margin="8,0,0,0"
+                                                    Style="{StaticResource GhostBtn}"
+                                                    Click="BtnBrowseSvcWhitelistDir_Click"/>
+                                            <Button Grid.Column="3" Content="加入白名单" Margin="6,0,0,0"
+                                                    Style="{StaticResource GhostBtn}"
+                                                    Click="BtnSvcWhitelistDir_Click"/>
+                                        </Grid>
+                                        <!-- Whitelist management DataGrid -->
+                                        <DataGrid x:Name="GridSvcWhitelist" MaxHeight="200"
+                                                  VirtualizingPanel.IsVirtualizing="True">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="类型" Binding="{Binding TypeDisplay}" Width="70"/>
+                                                <DataGridTextColumn Header="内容" Binding="{Binding Value}"       Width="*"/>
+                                                <DataGridTemplateColumn Header="操作" Width="68">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <Button Content="移除"
+                                                                    Tag="{Binding}"
+                                                                    Click="BtnRemoveSvcWhitelistEntry_Click"
+                                                                    Padding="6,3" FontSize="11" Margin="6,4"
+                                                                    Style="{StaticResource GhostBtn}"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </Border>
+
                             </StackPanel>
-                        </Border>
-
-                        <!-- Separator -->
-                        <Border Grid.Row="2" Background="{DynamicResource BgBorder}"/>
-
-                        <!-- Service DataGrid -->
-                        <Grid Grid.Row="3" Margin="20,12,20,8">
-                            <DataGrid x:Name="GridSvcHostServices"
-                                      VirtualizingPanel.IsVirtualizing="True"
-                                      PreviewMouseRightButtonDown="Grid_PreviewMouseRightButtonDown">
-                                <DataGrid.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="打开 DLL 所在目录" Click="SvcHostOpenDir_Click"/>
-                                        <MenuItem Header="复制 DLL 路径"     Click="SvcHostCopyPath_Click"/>
-                                    </ContextMenu>
-                                </DataGrid.ContextMenu>
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="PID"       Binding="{Binding PidDisplay}"  Width="65"/>
-                                    <DataGridTextColumn Header="服务名"    Binding="{Binding ServiceName}" Width="200" MinWidth="120"/>
-                                    <DataGridTextColumn Header="显示名称"  Binding="{Binding DisplayName}" Width="*"   MinWidth="150"/>
-                                    <DataGridTextColumn Header="ServiceDll 路径" Binding="{Binding DllDisplay}" Width="2*" MinWidth="200"/>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                            <TextBlock x:Name="TxtServiceOverlay"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       Foreground="{DynamicResource TxtMuted}" FontSize="13"
-                                       IsHitTestVisible="False"
-                                       Text="点击「加载服务列表」加载数据"/>
-                        </Grid>
+                        </ScrollViewer>
                     </Grid>
 
                 </Grid>

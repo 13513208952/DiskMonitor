@@ -286,6 +286,9 @@ sc.exe delete DiskMonitor
 - **DataGrid 字符串排序**：`TotalDisplay`/`ReadDisplay`/`WriteDisplay` 是格式化字符串，直接排序按字典序（"4.50 GB" < "456.7 MB"）。必须在 `DataGridTextColumn` 上加 `SortMemberPath="TotalBytes"` 等指向原始 `long` 字段
 - **explorer.exe /select 极慢**：用 `explorer.exe /select,"path"` 打开文件位置会触发 COM/DDE 进程间握手，可能阻塞数秒。应改为 `Process.Start(new ProcessStartInfo { FileName = dir, UseShellExecute = true })` 直接打开目录
 - **完全卸载必须读注册表路径**：卸载前通过 `HKLM\SYSTEM\CurrentControlSet\Services\DiskMonitor\ImagePath` 读取实际注册的二进制路径，才能正确删除可执行文件目录（不受安装路径变化影响）。还需清理 Event Log 源：`reg delete HKLM\...\EventLog\Application\DiskMonitor /f`
+- **svchost 托管服务 DLL 路径**：SCM 的 `BinaryPathName`（`QueryServiceConfig`）对 svchost 托管型服务返回的是 `svchost.exe -k XxxGroup`，不是真实 DLL。真实 DLL 在 `HKLM\SYSTEM\CurrentControlSet\Services\{Name}\Parameters\ServiceDll`（需展开环境变量）。
+- **SCM P/Invoke 获取服务 PID**：`ServiceController` 不暴露 PID，需 P/Invoke `QueryServiceStatusEx(hSvc, SC_STATUS_PROCESS_INFO, ...)` 获取 `SERVICE_STATUS_PROCESS.dwProcessId`。或用 `EnumServicesStatusExW` 加 `SC_ENUM_PROCESS_INFO` InfoLevel 一次性获取所有服务及其 PID。
+- **publish.ps1 发布验证**：在 `$LASTEXITCODE` 检查后增加了 exe 存在性验证，防止 dotnet 静默失败导致包不完整（曾导致 v1.1.0 首次打包缺少 service 目录）。
 
 ---
 
@@ -323,8 +326,9 @@ gh release create vX.Y.Z DiskMonitor-vX.Y.Z-win-x64.7z --title "vX.Y.Z" --notes 
 
 ---
 
-## 前端功能清单（v1.0.0）
+## 前端功能清单
 
+### v1.0.0
 - **今日 Tab**：实时 I/O 统计、3 张统计卡、DataGrid（进程/盘符/卷标/磁盘型号/读写/合计）
 - **历史 Tab**：日期范围查询、CSV 导出
 - **设置 Tab**：主题切换（6 套）、服务安装/启停/卸载、完全卸载
@@ -332,6 +336,29 @@ gh release create vX.Y.Z DiskMonitor-vX.Y.Z-win-x64.7z --title "vX.Y.Z" --notes 
 - **DataGrid 排序**：所有列可点击正/倒序，读写/合计按字节数排序（非字符串）
 - **主题持久化**：保存到 `%AppData%\DiskMonitor\theme.txt`
 - **服务状态轮询**：10 秒定时器，定时器回调有 try/catch 防崩溃
+
+### v1.1.0 新增
+- **异常分析 Tab**：RadioButton 子导航（`IO监控` / `插件检测`），手动点击加载，不自动刷新
+- **IO监控子Tab**：异常告警列表、阈值配置（全局/卷/磁盘）、磁盘统计、日期排除规则
+- **插件检测子Tab**（`Analysis/ShellExtensionScanner.cs`）：
+  - 扫描 `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved`
+  - DataGrid 列：DLL名称 / 厂商 / 创建时间 / 最终修改时间（reg写入时间与文件mtime取最大值）/ 幽灵标记 / 路径
+  - 白名单（持久化到 `analysis_config.json`）：厂商 / 单文件 / 目录 / 一键排除系统文件夹
+  - 白名单管理 DataGrid：类型 / 内容 / 移除按钮
+  - 分析区块：最新加入5个 / 最近修改10个 / explorer 近7天读写柱状图 / 幽灵路径列表
+  - 右键：打开文件所在目录
+
+### v1.2.0 已完成（2026-05-25）
+- **插件检测 Tab 小改**：解除置顶锁定（DataGrid 移入 ScrollViewer + MaxHeight="280"）、explorer 7天图移到顶部、扫描按钮旁显示今日 explorer 读写量
+- **柱状图顶部标签**：explorer 和 svchost 两个图的每根柱顶显示总 I/O 量（FontSize=9）
+- **服务监控子Tab（第三个子导航）**（`Analysis/SvcHostScanner.cs`）：
+  - 工具栏：`加载服务列表` + 今日 svchost 读写量标签 + `隐藏微软组件` 复选框 + `开启实时刷新` 切换按钮
+  - svchost 近7天 I/O 柱状图
+  - DataGrid 列：PID / 服务名 / 厂商 / 显示名称 / ServiceDll路径；MaxHeight="300"
+  - 右键：打开 DLL 所在目录 / 复制路径 / 将此厂商加入白名单 / 将此服务加入白名单
+  - 默认手动加载；启用实时刷新后每秒轮询一次
+  - 白名单（持久化到 `analysis_config.json` 中 `SvcWhitelist` 字段）：厂商 / 服务名 / 目录 / 一键排除系统文件夹
+  - 厂商信息来源：`FileVersionInfo.CompanyName`；微软组件自动标记 `IsMicrosoft=true`
 
 ---
 
@@ -358,13 +385,12 @@ gh release create vX.Y.Z DiskMonitor-vX.Y.Z-win-x64.7z --title "vX.Y.Z" --notes 
 
 #### 归因能力提升（用户态局部解）
 
-**svchost 服务关联**
-查询 SCM 建立 `svchost PID → 服务名列表` 映射，将"svchost.exe"细化为"是这N个服务之一"。
-实现位置：Core 层新增 `ServiceTracker` 类，纯用户态。
+**svchost 服务关联**（纯前端方案，不改后端）
+历史数据无 PID 无法追溯；前端"服务监控"子 Tab 实时查 SCM，展示各 svchost 托管的服务 DLL 路径，供用户在发现 svchost I/O 异常时人工排查。
 
-**Shell 扩展注册表扫描**
+**Shell 扩展注册表扫描** ✅ 已完成（v1.1.0）
 读取 `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved`，
-在前端单独展示所有第三方外壳扩展 DLL 及厂商，让用户知道"谁的 DLL 常驻在 explorer.exe 里"。
+在前端"插件检测"子 Tab 展示所有第三方外壳扩展 DLL 及厂商。
 
 **DLL 加载事件 ETW 关联**
 在现有 ETW 会话中追加订阅 `Microsoft-Windows-Kernel-Process` provider 的 `ImageLoad` 事件，

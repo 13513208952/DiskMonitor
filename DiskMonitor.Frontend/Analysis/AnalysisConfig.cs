@@ -41,6 +41,7 @@ public sealed class AnalysisConfig
     public Dictionary<string, ThresholdEntry> DiskThresholds   { get; set; } = [];
     public ThresholdEntry                     GlobalThreshold  { get; set; } = new();
     public ShellWhitelistConfig               ShellWhitelist   { get; set; } = new();
+    public SvcWhitelistConfig                 SvcWhitelist     { get; set; } = new();
 
     // ── Persistence ──────────────────────────────────────────────
     public static AnalysisConfig Load()
@@ -107,6 +108,32 @@ public sealed class ShellWhitelistConfig
         if (ExcludeSystemFolder &&
             (e.FilePath.StartsWith(SysDir,     StringComparison.OrdinalIgnoreCase) ||
              e.FilePath.StartsWith(WindowsDir, StringComparison.OrdinalIgnoreCase))) return true;
+        return false;
+    }
+}
+
+public sealed class SvcWhitelistConfig
+{
+    public List<string> VendorNames         { get; set; } = [];
+    public List<string> ServiceNames        { get; set; } = [];
+    public List<string> Directories         { get; set; } = [];
+    public bool         ExcludeSystemFolder { get; set; } = false;
+
+    private static readonly string SysDir     = Environment.GetFolderPath(Environment.SpecialFolder.System);
+    private static readonly string WindowsDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+
+    public bool IsWhitelisted(SvcHostServiceEntry e)
+    {
+        if (!string.IsNullOrEmpty(e.VendorName) &&
+            VendorNames.Any(v => v.Equals(e.VendorName, StringComparison.OrdinalIgnoreCase))) return true;
+        if (ServiceNames.Any(n => n.Equals(e.ServiceName, StringComparison.OrdinalIgnoreCase))) return true;
+        if (!string.IsNullOrEmpty(e.ServiceDll))
+        {
+            if (Directories.Any(d => e.ServiceDll.StartsWith(d, StringComparison.OrdinalIgnoreCase))) return true;
+            if (ExcludeSystemFolder &&
+                (e.ServiceDll.StartsWith(SysDir,     StringComparison.OrdinalIgnoreCase) ||
+                 e.ServiceDll.StartsWith(WindowsDir, StringComparison.OrdinalIgnoreCase))) return true;
+        }
         return false;
     }
 }

@@ -48,8 +48,10 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<ShellWhitelistEntryVm> _shellWhitelistItems = [];
 
     // Service monitor tab
-    private readonly ObservableCollection<SvcHostServiceEntry>  _svcItems         = [];
-    private readonly ObservableCollection<ExplorerDayBucket>    _svchostDayItems  = [];
+    private List<SvcHostServiceEntry> _allSvcEntries = [];
+    private readonly ObservableCollection<SvcHostServiceEntry>  _svcItems            = [];
+    private readonly ObservableCollection<ExplorerDayBucket>    _svchostDayItems     = [];
+    private readonly ObservableCollection<SvcWhitelistEntryVm>  _svcWhitelistItems   = [];
     private DispatcherTimer? _svcRefreshTimer;
 
     // ── Init ────────────────────────────────────────────────────
@@ -75,6 +77,7 @@ public partial class MainWindow : Window
         GridShellWhitelist.ItemsSource  = _shellWhitelistItems;
         GridSvcHostServices.ItemsSource = _svcItems;
         SvchostDayChart.ItemsSource     = _svchostDayItems;
+        GridSvcWhitelist.ItemsSource    = _svcWhitelistItems;
 
         TxtDbPath.Text      = _dbPath;
         TxtTodayDate.Text   = $"今日 · {DateTime.Today:yyyy-MM-dd}";
@@ -99,13 +102,17 @@ public partial class MainWindow : Window
         ChkLooseMode.IsChecked            = _analysisConfig.LooseMode;
         ChkExcludeSysProc.IsChecked       = _analysisConfig.ExcludeSystemProcesses;
         ChkExcludeExplorer.IsChecked      = _analysisConfig.ExcludeExplorer;
-        ChkExcludeSystemFolder.IsChecked  = _analysisConfig.ShellWhitelist.ExcludeSystemFolder;
+        ChkExcludeSystemFolder.IsChecked    = _analysisConfig.ShellWhitelist.ExcludeSystemFolder;
+        ChkSvcExcludeSystemFolder.IsChecked = _analysisConfig.SvcWhitelist.ExcludeSystemFolder;
         _suppressThemeChange = false;
         UpdateAnalysisStatus();
         RefreshShellWhitelistTags();
-        // Pre-populate vendor combobox from saved whitelist
+        RefreshSvcWhitelistTags();
+        // Pre-populate vendor comboboxes from saved whitelist
         foreach (var v in _analysisConfig.ShellWhitelist.VendorNames)
             CmbWhitelistVendor.Items.Add(v);
+        foreach (var v in _analysisConfig.SvcWhitelist.VendorNames)
+            CmbSvcWhitelistVendor.Items.Add(v);
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -1333,13 +1340,22 @@ public partial class MainWindow : Window
 
         try
         {
-            var entries = await Task.Run(() => SvcHostScanner.Scan());
+            _allSvcEntries = await Task.Run(() => SvcHostScanner.Scan());
 
-            _svcItems.Clear();
-            foreach (var s in entries) _svcItems.Add(s);
+            // Rebuild vendor combobox from fresh scan data
+            var vendors = _allSvcEntries
+                .Select(x => x.VendorName)
+                .Where(v => !string.IsNullOrEmpty(v))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(v => v)
+                .ToList();
+            CmbSvcWhitelistVendor.Items.Clear();
+            foreach (var v in vendors) CmbSvcWhitelistVendor.Items.Add(v);
+            foreach (var v in _analysisConfig.SvcWhitelist.VendorNames)
+                if (!CmbSvcWhitelistVendor.Items.Contains(v)) CmbSvcWhitelistVendor.Items.Add(v);
 
-            TxtServiceStatus.Text  = $"共 {_svcItems.Count} 个 svchost 托管服务";
-            TxtServiceOverlay.Text = _svcItems.Count == 0 ? "未找到 svchost 托管服务" : "";
+            ApplySvcFilters();
+            TxtServiceStatus.Text = $"共 {_allSvcEntries.Count} 个 svchost 托管服务，显示 {_svcItems.Count} 条";
 
             await LoadSvchostTodayInfoAsync();
             await LoadSvchostChartAsync();
@@ -1376,10 +1392,9 @@ public partial class MainWindow : Window
     {
         try
         {
-            var entries = await Task.Run(() => SvcHostScanner.Scan());
-            _svcItems.Clear();
-            foreach (var s in entries) _svcItems.Add(s);
-            TxtServiceStatus.Text = $"共 {_svcItems.Count} 个 svchost 托管服务（实时刷新中）";
+            _allSvcEntries = await Task.Run(() => SvcHostScanner.Scan());
+            ApplySvcFilters();
+            TxtServiceStatus.Text = $"共 {_allSvcEntries.Count} 个（实时刷新中），显示 {_svcItems.Count} 条";
         }
         catch { }
     }
@@ -1424,6 +1439,188 @@ public partial class MainWindow : Window
     {
         var menu = ((MenuItem)menuItemSender).Parent as ContextMenu;
         return (menu?.PlacementTarget as DataGrid)?.SelectedItem as SvcHostServiceEntry;
+    }
+
+    // ── Service monitor filters + whitelist ───────────────────────
+
+    private void ApplySvcFilters()
+    {
+        bool hideMicrosoft = ChkHideMicrosoftSvc.IsChecked == true;
+        var wl = _analysisConfig.SvcWhitelist;
+
+        _svcItems.Clear();
+        foreach (var entry in _allSvcEntries)
+        {
+            if (hideMicrosoft && entry.IsMicrosoft) continue;
+            if (wl.IsWhitelisted(entry)) continue;
+            _svcItems.Add(entry);
+        }
+
+        TxtServiceOverlay.Text = _allSvcEntries.Count > 0 && _svcItems.Count == 0
+            ? "所有条目均已被过滤（微软组件 / 白名单）"
+            : "";
+    }
+
+    private void SvcFilterChanged(object sender, RoutedEventArgs e)
+    {
+        if (_allSvcEntries.Count == 0) return;
+        ApplySvcFilters();
+        TxtServiceStatus.Text = $"共 {_allSvcEntries.Count} 个 svchost 托管服务，显示 {_svcItems.Count} 条";
+    }
+
+    private void ChkSvcExcludeSystemFolder_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_suppressThemeChange) return;
+        _analysisConfig.SvcWhitelist.ExcludeSystemFolder = ChkSvcExcludeSystemFolder.IsChecked == true;
+        _analysisConfig.Save();
+        RefreshSvcWhitelistTags();
+        if (_allSvcEntries.Count > 0) ApplySvcFilters();
+    }
+
+    private void BtnSvcWhitelistVendor_Click(object sender, RoutedEventArgs e)
+    {
+        var vendor = (CmbSvcWhitelistVendor.SelectedItem as string) ?? CmbSvcWhitelistVendor.Text?.Trim();
+        if (string.IsNullOrEmpty(vendor)) return;
+        if (_analysisConfig.SvcWhitelist.VendorNames
+                .Any(v => v.Equals(vendor, StringComparison.OrdinalIgnoreCase))) return;
+        _analysisConfig.SvcWhitelist.VendorNames.Add(vendor);
+        _analysisConfig.Save();
+        RefreshSvcWhitelistTags();
+        if (_allSvcEntries.Count > 0) ApplySvcFilters();
+    }
+
+    private void BtnSvcWhitelistService_Click(object sender, RoutedEventArgs e)
+    {
+        var name = TxtSvcWhitelistService.Text?.Trim();
+        if (string.IsNullOrEmpty(name)) return;
+        if (_analysisConfig.SvcWhitelist.ServiceNames
+                .Any(n => n.Equals(name, StringComparison.OrdinalIgnoreCase))) return;
+        _analysisConfig.SvcWhitelist.ServiceNames.Add(name);
+        _analysisConfig.Save();
+        RefreshSvcWhitelistTags();
+        if (_allSvcEntries.Count > 0) ApplySvcFilters();
+    }
+
+    private void BtnBrowseSvcWhitelistDir_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFolderDialog { Title = "选择要加入白名单的目录" };
+        if (dlg.ShowDialog() == true) TxtSvcWhitelistDir.Text = dlg.FolderName;
+    }
+
+    private void BtnSvcWhitelistDir_Click(object sender, RoutedEventArgs e)
+    {
+        var dir = TxtSvcWhitelistDir.Text?.Trim();
+        if (string.IsNullOrEmpty(dir)) return;
+        if (_analysisConfig.SvcWhitelist.Directories
+                .Any(d => d.Equals(dir, StringComparison.OrdinalIgnoreCase))) return;
+        _analysisConfig.SvcWhitelist.Directories.Add(dir);
+        _analysisConfig.Save();
+        RefreshSvcWhitelistTags();
+        if (_allSvcEntries.Count > 0) ApplySvcFilters();
+    }
+
+    private void RefreshSvcWhitelistTags()
+    {
+        _svcWhitelistItems.Clear();
+        var wl = _analysisConfig.SvcWhitelist;
+
+        if (wl.ExcludeSystemFolder)
+            _svcWhitelistItems.Add(new SvcWhitelistEntryVm
+            {
+                TypeDisplay = "系统文件夹",
+                Value       = "%SystemRoot% 及 %SystemRoot%\\System32 内全部 DLL",
+                OnRemove    = () =>
+                {
+                    wl.ExcludeSystemFolder = false;
+                    _suppressThemeChange = true;
+                    ChkSvcExcludeSystemFolder.IsChecked = false;
+                    _suppressThemeChange = false;
+                    _analysisConfig.Save();
+                    RefreshSvcWhitelistTags();
+                    if (_allSvcEntries.Count > 0) ApplySvcFilters();
+                },
+            });
+
+        foreach (var v in wl.VendorNames.ToList())
+        {
+            var cap = v;
+            _svcWhitelistItems.Add(new SvcWhitelistEntryVm
+            {
+                TypeDisplay = "厂商",
+                Value       = cap,
+                OnRemove    = () =>
+                {
+                    wl.VendorNames.Remove(cap);
+                    _analysisConfig.Save();
+                    RefreshSvcWhitelistTags();
+                    if (_allSvcEntries.Count > 0) ApplySvcFilters();
+                },
+            });
+        }
+
+        foreach (var n in wl.ServiceNames.ToList())
+        {
+            var cap = n;
+            _svcWhitelistItems.Add(new SvcWhitelistEntryVm
+            {
+                TypeDisplay = "服务名",
+                Value       = cap,
+                OnRemove    = () =>
+                {
+                    wl.ServiceNames.Remove(cap);
+                    _analysisConfig.Save();
+                    RefreshSvcWhitelistTags();
+                    if (_allSvcEntries.Count > 0) ApplySvcFilters();
+                },
+            });
+        }
+
+        foreach (var d in wl.Directories.ToList())
+        {
+            var cap = d;
+            _svcWhitelistItems.Add(new SvcWhitelistEntryVm
+            {
+                TypeDisplay = "目录",
+                Value       = cap,
+                OnRemove    = () =>
+                {
+                    wl.Directories.Remove(cap);
+                    _analysisConfig.Save();
+                    RefreshSvcWhitelistTags();
+                    if (_allSvcEntries.Count > 0) ApplySvcFilters();
+                },
+            });
+        }
+    }
+
+    private void BtnRemoveSvcWhitelistEntry_Click(object sender, RoutedEventArgs e)
+    {
+        if (((Button)sender).Tag is SvcWhitelistEntryVm vm)
+            vm.OnRemove();
+    }
+
+    private void SvcHostWhitelistVendor_Click(object sender, RoutedEventArgs e)
+    {
+        var entry = GetSvcHostEntry(sender);
+        if (entry == null || string.IsNullOrEmpty(entry.VendorName)) return;
+        if (_analysisConfig.SvcWhitelist.VendorNames
+                .Any(v => v.Equals(entry.VendorName, StringComparison.OrdinalIgnoreCase))) return;
+        _analysisConfig.SvcWhitelist.VendorNames.Add(entry.VendorName);
+        _analysisConfig.Save();
+        RefreshSvcWhitelistTags();
+        if (_allSvcEntries.Count > 0) ApplySvcFilters();
+    }
+
+    private void SvcHostWhitelistService_Click(object sender, RoutedEventArgs e)
+    {
+        var entry = GetSvcHostEntry(sender);
+        if (entry == null) return;
+        if (_analysisConfig.SvcWhitelist.ServiceNames
+                .Any(n => n.Equals(entry.ServiceName, StringComparison.OrdinalIgnoreCase))) return;
+        _analysisConfig.SvcWhitelist.ServiceNames.Add(entry.ServiceName);
+        _analysisConfig.Save();
+        RefreshSvcWhitelistTags();
+        if (_allSvcEntries.Count > 0) ApplySvcFilters();
     }
 
     // ── Whitelist handlers ────────────────────────────────────────
@@ -1623,6 +1820,15 @@ public partial class MainWindow : Window
         var menu = ((MenuItem)menuItemSender).Parent as ContextMenu;
         return (menu?.PlacementTarget as DataGrid)?.SelectedItem as ShellExtensionEntry;
     }
+}
+
+// ── Svc Whitelist VM ────────────────────────────────────────────
+
+public sealed class SvcWhitelistEntryVm
+{
+    public string TypeDisplay { get; init; } = "";
+    public string Value       { get; init; } = "";
+    public Action OnRemove    { get; init; } = () => {};
 }
 
 // ── Shell Whitelist VM ──────────────────────────────────────────
