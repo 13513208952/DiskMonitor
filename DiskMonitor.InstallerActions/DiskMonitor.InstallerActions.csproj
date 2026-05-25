@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>DiskMonitor.InstallerActions</AssemblyName>
+    <RootNamespace>DiskMonitor.InstallerActions</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Dtf.CustomAction" Version="7.0.0" />
+    <PackageReference Include="WixToolset.Dtf.WindowsInstaller" Version="7.0.0" />
+  </ItemGroup>
+
+</Project>

@@ -292,15 +292,18 @@ sc.exe delete DiskMonitor
 
 ---
 
-## 便携包发布
+## 发行版结构（三包并行）
 
-### 构建便携包
+每个版本发布三个产物，面向不同用户群体：
 
-```powershell
-.\publish.ps1
-```
+| 产物 | 文件名 | 目标用户 | 说明 |
+|------|--------|----------|------|
+| 压缩包 | `DiskMonitor-vX.Y.Z-win-x64.7z` | 专业用户 | 解压即用，自行管理路径与服务 |
+| MSI 安装包 | `DiskMonitor-vX.Y.Z-win-x64.msi` | 标准用户 | 安装到 Program Files，Clean 卸载 |
+| 自解压 EXE | `DiskMonitor-vX.Y.Z-win-x64-setup.exe` | 普通大众 | NSIS 打包，解压到 C:\DiskMonitor，桌面快捷方式 |
 
-输出到 `publish\DiskMonitor\`，结构：
+### 便携包结构（7z / NSIS 共用）
+
 ```
 publish\DiskMonitor\
 ├── DiskMonitor.Frontend.exe   # 双击运行
@@ -313,15 +316,61 @@ publish\DiskMonitor\
 - 前端查找服务 exe 顺序：`service\` 子目录 → 同级目录 → 开发布局
 - 两个子项目各自 self-contained，运行时不共享（避免 DLL 冲突）
 
+### MSI 安装版文件布局
+
+```
+%ProgramFiles%\DiskMonitor\         ← MSI 管辖（随 MSI 卸载）
+  DiskMonitor.Frontend.exe
+  (前端依赖)
+
+%ProgramData%\DiskMonitor\          ← MSI 完全不碰
+  diskmonitor.db                    ← 数据库
+  analysis_config.json              ← 分析配置
+  service\
+    DiskMonitor.Service.exe         ← 服务二进制（Custom Action 部署）
+    (服务依赖)
+```
+
+- MSI 安装时：Custom Action 将服务二进制复制到 `%ProgramData%`，检测并迁移已有的便携版服务
+- MSI 卸载时：Custom Action 询问是否同时卸载服务（可选）；选"否"则服务继续运行不受影响
+- 数据库和服务二进制与 MSI 生命周期完全解耦，前端可随意升级换版本
+
+### NSIS 自解压版行为
+
+- 解压到 `C:\DiskMonitor`（固定路径，无路径选择对话框）
+- 在当前用户桌面创建 `DiskMonitor.lnk` 快捷方式
+- NSIS 自动生成卸载程序，从临时目录运行，删除 `C:\DiskMonitor` 和桌面快捷方式
+- 服务安装仍由用户在前端「设置→安装服务」手动操作（保持现有行为）
+- 不涉及注册表写入，不污染 Program Files
+
+### 新增项目结构
+
+```
+DiskMonitor.sln
+├── DiskMonitor.Core
+├── DiskMonitor.Service
+├── DiskMonitor.Frontend
+├── DiskMonitor.DebugHost
+├── DiskMonitor.Installer          # WiX MSI 项目（.wixproj）
+├── DiskMonitor.InstallerActions   # WiX Custom Action DLL（C#）
+└── installer\
+    └── DiskMonitor.nsi            # NSIS 脚本
+```
+
 ### GitHub 仓库
 
 `https://github.com/13513208952/DiskMonitor`
 
 发布新版本：
 ```powershell
-.\publish.ps1
-7z a DiskMonitor-vX.Y.Z-win-x64.7z .\publish\DiskMonitor\
-gh release create vX.Y.Z DiskMonitor-vX.Y.Z-win-x64.7z --title "vX.Y.Z" --notes "变更说明"
+.\publish.ps1                      # 生成便携包到 publish\DiskMonitor\
+.\build-installers.ps1             # 构建 MSI + NSIS EXE（输出到 dist\）
+# 然后：
+gh release create vX.Y.Z `
+    dist\DiskMonitor-vX.Y.Z-win-x64.7z `
+    dist\DiskMonitor-vX.Y.Z-win-x64.msi `
+    dist\DiskMonitor-vX.Y.Z-win-x64-setup.exe `
+    --title "vX.Y.Z" --notes "变更说明"
 ```
 
 ---
@@ -409,7 +458,8 @@ gh release create vX.Y.Z DiskMonitor-vX.Y.Z-win-x64.7z --title "vX.Y.Z" --notes 
 
 #### 工程质量
 
-- 正式安装程序（MSIX / WiX）替代手动 `sc.exe`
+- ✅ MSI 安装包（WiX）——计划中（v1.3.0）
+- ✅ NSIS 自解压便携 EXE——计划中（v1.3.0）
 - 多语言支持（WPF 资源文件 i18n，优先中/英）
 - Windows 版本适配（跟进 ETW API 变更）
 

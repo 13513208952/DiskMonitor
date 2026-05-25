@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiskMonitor.Frontend", "Dis
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiskMonitor.DebugHost", "DiskMonitor.DebugHost\DiskMonitor.DebugHost.csproj", "{1A1FF862-6D82-42B2-B362-F3EB7148B3C4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiskMonitor.InstallerActions", "DiskMonitor.InstallerActions\DiskMonitor.InstallerActions.csproj", "{88C9D82D-10ED-4C64-9FE8-D07E36661766}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,18 @@ Global
 		{1A1FF862-6D82-42B2-B362-F3EB7148B3C4}.Release|x64.Build.0 = Release|Any CPU
 		{1A1FF862-6D82-42B2-B362-F3EB7148B3C4}.Release|x86.ActiveCfg = Release|Any CPU
 		{1A1FF862-6D82-42B2-B362-F3EB7148B3C4}.Release|x86.Build.0 = Release|Any CPU
+		{88C9D82D-10ED-4C64-9FE8-D07E36661766}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88C9D82D-10ED-4C64-9FE8-D07E36661766}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88C9D82D-10ED-4C64-9FE8-D07E36661766}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{88C9D82D-10ED-4C64-9FE8-D07E36661766}.Debug|x64.Build.0 = Debug|Any CPU
+		{88C9D82D-10ED-4C64-9FE8-D07E36661766}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{88C9D82D-10ED-4C64-9FE8-D07E36661766}.Debug|x86.Build.0 = Debug|Any CPU
+		{88C9D82D-10ED-4C64-9FE8-D07E36661766}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88C9D82D-10ED-4C64-9FE8-D07E36661766}.Release|Any CPU.Build.0 = Release|Any CPU
+		{88C9D82D-10ED-4C64-9FE8-D07E36661766}.Release|x64.ActiveCfg = Release|Any CPU
+		{88C9D82D-10ED-4C64-9FE8-D07E36661766}.Release|x64.Build.0 = Release|Any CPU
+		{88C9D82D-10ED-4C64-9FE8-D07E36661766}.Release|x86.ActiveCfg = Release|Any CPU
+		{88C9D82D-10ED-4C64-9FE8-D07E36661766}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
