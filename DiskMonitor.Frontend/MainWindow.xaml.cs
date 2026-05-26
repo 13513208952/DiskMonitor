@@ -369,9 +369,14 @@ public partial class MainWindow : Window
                 "找不到可执行文件", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
-        RunElevated("sc.exe",
-            $"create {ServiceName} binPath=\"{exePath}\" start=auto " +
-            $"DisplayName=\"DiskMonitor IO Monitor\"");
+        // 先清理残留注册（幂等：不管之前状态都能重建干净），再创建并启动
+        RunElevated("cmd.exe",
+            $"/c sc.exe stop {ServiceName} 2>nul & " +
+            $"timeout /t 3 /nobreak >nul & " +
+            $"sc.exe delete {ServiceName} 2>nul & " +
+            $"timeout /t 2 /nobreak >nul & " +
+            $"sc.exe create {ServiceName} binPath= \"{exePath}\" start= auto " +
+            $"DisplayName= \"DiskMonitor IO Monitor\"");
     }
 
 #if NSIS_BUILD
@@ -442,9 +447,12 @@ public partial class MainWindow : Window
                 "卸载服务", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             return;
 
+        // stop 后等待进程退出再 delete，防止残留注册
         RunElevated("cmd.exe",
-            $"/c sc.exe stop {ServiceName} 2>nul & sc.exe delete {ServiceName} 2>nul");
-        await Task.Delay(6000);
+            $"/c sc.exe stop {ServiceName} 2>nul & " +
+            $"timeout /t 4 /nobreak >nul & " +
+            $"sc.exe delete {ServiceName} 2>nul");
+        await Task.Delay(8000);
         await RefreshAllAsync();
     }
 
