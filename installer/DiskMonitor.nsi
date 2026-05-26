@@ -60,8 +60,8 @@ Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
   SetOverwrite on
 
-  ; Copy all frontend + service files
-  File /r "publish\DiskMonitor\*.*"
+  ; Copy all frontend + service files (NSIS-edition build with auto-install dialog)
+  File /r "publish\DiskMonitor-Nsis\*.*"
 
   ; Create desktop shortcut
   CreateShortcut "$DESKTOP\DiskMonitor.lnk" \

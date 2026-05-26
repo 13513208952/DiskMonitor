@@ -127,6 +127,10 @@ public partial class MainWindow : Window
             catch { }
         };
         _timer.Start();
+
+#if NSIS_BUILD
+        _ = CheckAndPromptServiceInstallAsync();
+#endif
     }
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -369,6 +373,68 @@ public partial class MainWindow : Window
             $"create {ServiceName} binPath=\"{exePath}\" start=auto " +
             $"DisplayName=\"DiskMonitor IO Monitor\"");
     }
+
+#if NSIS_BUILD
+    private async Task CheckAndPromptServiceInstallAsync()
+    {
+        bool installed;
+        try
+        {
+            using var sc = new ServiceController(ServiceName);
+            _ = sc.Status;
+            installed = true;
+        }
+        catch (InvalidOperationException) { installed = false; }
+        catch { return; }
+
+        if (installed) return;
+
+        var result = MessageBox.Show(
+            "DiskMonitor 后台服务尚未安装。\n\n" +
+            "服务负责在后台持续采集磁盘 I/O 数据，是本软件正常运行的必要组件。\n\n" +
+            "点击「确定」将弹出管理员权限请求，确认后自动完成安装并启动服务。",
+            "尚未安装服务",
+            MessageBoxButton.OKCancel,
+            MessageBoxImage.Information,
+            MessageBoxResult.OK);
+
+        if (result != MessageBoxResult.OK) return;
+
+        var exePath = FindServiceExe();
+        if (exePath == null)
+        {
+            MessageBox.Show("找不到 DiskMonitor.Service.exe，请重新安装程序。",
+                "安装失败", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName        = "cmd.exe",
+                Arguments       = $"/c sc.exe create {ServiceName} binPath= \"{exePath}\" " +
+                                   $"start= auto DisplayName= \"DiskMonitor IO Monitor\" " +
+                                   $"&& sc.exe start {ServiceName}",
+                UseShellExecute = true,
+                Verb            = "runas",
+            });
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            return; // 用户取消了 UAC，下次启动仍会提示
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"启动安装程序失败:\n{ex.Message}", "错误",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        await Task.Delay(4000);
+        await RefreshAllAsync();
+    }
+#endif
 
     private async void BtnUninstall_Click(object sender, RoutedEventArgs e)
     {

@@ -96,16 +96,16 @@ function New-WixFragment {
 
 if (-not (Test-Path $distDir)) { New-Item -ItemType Directory -Path $distDir | Out-Null }
 
-# ── [1/5] Publish ────────────────────────────────────────────────────────────
-Write-Host "[1/5] Running publish.ps1..." -ForegroundColor Cyan
+# ── [1/6] Publish ────────────────────────────────────────────────────────────
+Write-Host "[1/6] Running publish.ps1..." -ForegroundColor Cyan
 & "$root\publish.ps1"
 if ($LASTEXITCODE -ne 0) { throw "publish.ps1 failed" }
 if (-not (Test-Path "$pubRoot\DiskMonitor.Frontend.exe")) { throw "Frontend EXE missing after publish" }
 if (-not (Test-Path "$svcPub\DiskMonitor.Service.exe"))   { throw "Service EXE missing after publish" }
 Write-Host "  OK" -ForegroundColor Green
 
-# ── [2/5] Build CA DLL ───────────────────────────────────────────────────────
-Write-Host "[2/5] Building CA DLL..." -ForegroundColor Cyan
+# ── [2/6] Build CA DLL ───────────────────────────────────────────────────────
+Write-Host "[2/6] Building CA DLL..." -ForegroundColor Cyan
 $actionsProj = "$root\DiskMonitor.InstallerActions\DiskMonitor.InstallerActions.csproj"
 dotnet build $actionsProj -c Release --nologo -v quiet
 if ($LASTEXITCODE -ne 0) { throw "InstallerActions build failed" }
@@ -113,8 +113,8 @@ $caDll = "$root\DiskMonitor.InstallerActions\bin\Release\net48\DiskMonitor.Insta
 if (-not (Test-Path $caDll)) { throw "CA DLL missing: $caDll" }
 Write-Host "  OK: DiskMonitor.InstallerActions.CA.dll" -ForegroundColor Green
 
-# ── [3/5] Generate WiX fragments ─────────────────────────────────────────────
-Write-Host "[3/5] Generating WiX fragments..." -ForegroundColor Cyan
+# ── [3/6] Generate WiX fragments ─────────────────────────────────────────────
+Write-Host "[3/6] Generating WiX fragments..." -ForegroundColor Cyan
 
 $feFiles = Get-ChildItem $pubRoot -Recurse -File |
            Where-Object { $_.FullName -notlike "$svcPub\*" }
@@ -140,8 +140,8 @@ New-WixFragment `
 
 Write-Host "  OK" -ForegroundColor Green
 
-# ── [4/5] Build MSI ──────────────────────────────────────────────────────────
-Write-Host "[4/5] Building MSI..." -ForegroundColor Cyan
+# ── [4/6] Build MSI ──────────────────────────────────────────────────────────
+Write-Host "[4/6] Building MSI..." -ForegroundColor Cyan
 
 $frontendWxs = "$root\DiskMonitor.Installer\FrontendFiles.wxs"
 $serviceWxs  = "$root\DiskMonitor.Installer\ServiceFiles.wxs"
@@ -174,8 +174,32 @@ if (-not (Test-Path $msiOut)) { throw "MSI not found after wix build" }
 $msiMB = [Math]::Round((Get-Item $msiOut).Length / 1MB, 1)
 Write-Host "  OK: DiskMonitor-Setup.msi ($msiMB MB)" -ForegroundColor Green
 
-# ── [5/5] Build NSIS EXE ─────────────────────────────────────────────────────
-Write-Host "[5/5] Building NSIS EXE..." -ForegroundColor Cyan
+# ── [5/6] Build NSIS-edition publish ─────────────────────────────────────────
+Write-Host "[5/6] Building NSIS-edition frontend (NsisEdition=true)..." -ForegroundColor Cyan
+
+$nsisPub = Join-Path $root "publish\DiskMonitor-Nsis"
+$nsisTmp = Join-Path $root "publish\DiskMonitor-Nsis-tmp"
+
+if (Test-Path $nsisPub) { Remove-Item $nsisPub -Recurse -Force }
+Copy-Item $pubRoot $nsisPub -Recurse
+
+dotnet publish "$root\DiskMonitor.Frontend\DiskMonitor.Frontend.csproj" `
+    -c Release -r win-x64 --self-contained true `
+    -p:NsisEdition=true `
+    -p:PublishReadyToRun=true `
+    -p:DebugType=none `
+    -p:DebugSymbols=false `
+    -o $nsisTmp --nologo -v quiet 2>&1
+if ($LASTEXITCODE -ne 0) { throw "NSIS-edition frontend publish failed" }
+
+Get-ChildItem $nsisTmp -File | Copy-Item -Destination $nsisPub -Force
+Get-ChildItem $nsisPub -File -Filter "*.xml" -ErrorAction SilentlyContinue | Remove-Item -Force
+Remove-Item $nsisTmp -Recurse -Force
+if (-not (Test-Path "$nsisPub\DiskMonitor.Frontend.exe")) { throw "NSIS-edition EXE missing" }
+Write-Host "  OK" -ForegroundColor Green
+
+# ── [6/6] Build NSIS EXE ─────────────────────────────────────────────────────
+Write-Host "[6/6] Building NSIS EXE..." -ForegroundColor Cyan
 if (-not (Test-Path $nsisExe)) {
     Write-Warning "NSIS not found at '$nsisExe' — skipping"
 } else {

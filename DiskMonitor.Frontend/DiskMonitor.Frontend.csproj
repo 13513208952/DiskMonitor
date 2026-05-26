@@ -16,4 +16,8 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(NsisEdition)' == 'true'">
+    <DefineConstants>$(DefineConstants);NSIS_BUILD</DefineConstants>
+  </PropertyGroup>
+
 </Project>
