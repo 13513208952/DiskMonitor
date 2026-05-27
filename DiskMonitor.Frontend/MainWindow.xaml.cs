@@ -360,7 +360,7 @@ public partial class MainWindow : Window
         });
     }
 
-    private void BtnInstall_Click(object sender, RoutedEventArgs e)
+    private async void BtnInstall_Click(object sender, RoutedEventArgs e)
     {
         var exePath = FindServiceExe();
         if (exePath == null)
@@ -369,14 +369,43 @@ public partial class MainWindow : Window
                 "找不到可执行文件", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
-        // 先清理残留注册（幂等：不管之前状态都能重建干净），再创建并启动
-        RunElevated("cmd.exe",
-            $"/c sc.exe stop {ServiceName} 2>nul & " +
-            $"timeout /t 3 /nobreak >nul & " +
-            $"sc.exe delete {ServiceName} 2>nul & " +
-            $"timeout /t 2 /nobreak >nul & " +
-            $"sc.exe create {ServiceName} binPath= \"{exePath}\" start= auto " +
-            $"DisplayName= \"DiskMonitor IO Monitor\"");
+
+        BtnInstall.IsEnabled = false;
+
+        // 条件轮询：等服务真正停止再 delete，等注册真正消失再 create，避免时序竞争
+        // $$"""...""" → 双 $ 使 {{expr}} 为 C# 插值，单个 { } 在 PS 脚本中保持字面量
+        var script = $$"""
+            $sn = 'DiskMonitor'
+            $ep = '{{exePath}}'
+            $svc = Get-Service -Name $sn -ErrorAction SilentlyContinue
+            if ($svc -and $svc.Status -ne 'Stopped') {
+                & sc.exe stop $sn | Out-Null
+                $dead = [DateTime]::UtcNow.AddSeconds(30)
+                while ([DateTime]::UtcNow -lt $dead) {
+                    $svc.Refresh()
+                    if ($svc.Status -eq 'Stopped') { break }
+                    Start-Sleep -Milliseconds 500
+                }
+            }
+            if (Get-Service -Name $sn -ErrorAction SilentlyContinue) {
+                & sc.exe delete $sn | Out-Null
+                $dead2 = [DateTime]::UtcNow.AddSeconds(20)
+                while ([DateTime]::UtcNow -lt $dead2) {
+                    if (-not (Get-Service -Name $sn -ErrorAction SilentlyContinue)) { break }
+                    Start-Sleep -Milliseconds 500
+                }
+            }
+            & sc.exe create $sn 'binPath=' $ep 'start=' 'auto' 'DisplayName=' 'DiskMonitor IO Monitor' | Out-Null
+            & sc.exe start $sn | Out-Null
+            """;
+
+        var proc = StartElevatedPowerShell(script);
+        if (proc != null)
+        {
+            await Task.Run(() => proc.WaitForExit(40_000));
+            proc.Dispose();
+        }
+        await RefreshAllAsync();
     }
 
 #if NSIS_BUILD
@@ -447,12 +476,37 @@ public partial class MainWindow : Window
                 "卸载服务", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             return;
 
-        // stop 后等待进程退出再 delete，防止残留注册
-        RunElevated("cmd.exe",
-            $"/c sc.exe stop {ServiceName} 2>nul & " +
-            $"timeout /t 4 /nobreak >nul & " +
-            $"sc.exe delete {ServiceName} 2>nul");
-        await Task.Delay(8000);
+        BtnUninstall.IsEnabled = false;
+
+        // 条件轮询：等服务真正停止后再 delete，等注册真正消失后再返回
+        var script = """
+            $sn = 'DiskMonitor'
+            $svc = Get-Service -Name $sn -ErrorAction SilentlyContinue
+            if ($svc -and $svc.Status -ne 'Stopped') {
+                & sc.exe stop $sn | Out-Null
+                $dead = [DateTime]::UtcNow.AddSeconds(30)
+                while ([DateTime]::UtcNow -lt $dead) {
+                    $svc.Refresh()
+                    if ($svc.Status -eq 'Stopped') { break }
+                    Start-Sleep -Milliseconds 500
+                }
+            }
+            if (Get-Service -Name $sn -ErrorAction SilentlyContinue) {
+                & sc.exe delete $sn | Out-Null
+                $dead2 = [DateTime]::UtcNow.AddSeconds(20)
+                while ([DateTime]::UtcNow -lt $dead2) {
+                    if (-not (Get-Service -Name $sn -ErrorAction SilentlyContinue)) { break }
+                    Start-Sleep -Milliseconds 500
+                }
+            }
+            """;
+
+        var proc = StartElevatedPowerShell(script);
+        if (proc != null)
+        {
+            await Task.Run(() => proc.WaitForExit(40_000));
+            proc.Dispose();
+        }
         await RefreshAllAsync();
     }
 
@@ -669,6 +723,37 @@ public partial class MainWindow : Window
         {
             MessageBox.Show($"操作失败（可能需要管理员权限）:\n{ex.Message}",
                 "服务管理", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Base64-encodes <paramref name="script"/> (UTF-16LE) and launches an elevated
+    /// hidden PowerShell process via -EncodedCommand.
+    /// Returns the Process so the caller can WaitForExit, or null if UAC was cancelled.
+    /// </summary>
+    private static Process? StartElevatedPowerShell(string script)
+    {
+        var b64 = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName        = "powershell.exe",
+                Arguments       = $"-NonInteractive -NoProfile -WindowStyle Hidden -EncodedCommand {b64}",
+                UseShellExecute = true,
+                Verb            = "runas",
+            };
+            return Process.Start(psi);
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            return null; // 用户取消了 UAC 弹窗
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"无法启动管理员进程:\n{ex.Message}",
+                "服务管理", MessageBoxButton.OK, MessageBoxImage.Error);
+            return null;
         }
     }
 

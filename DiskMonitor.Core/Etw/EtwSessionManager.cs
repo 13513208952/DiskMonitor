@@ -33,8 +33,13 @@ public sealed class EtwSessionManager : IDisposable
 
     public void Start()
     {
-        // 清理可能残留的同名会话
-        TraceEventSession.GetActiveSession(SessionName)?.Dispose();
+        // 清理可能残留的同名会话（显式 Stop 再 Dispose，防止僵尸会话阻止新建）
+        try
+        {
+            var old = TraceEventSession.GetActiveSession(SessionName);
+            if (old != null) { old.Stop(); old.Dispose(); }
+        }
+        catch { }
 
         _session = new TraceEventSession(SessionName)
         {
@@ -100,7 +105,7 @@ public sealed class EtwSessionManager : IDisposable
 
     public void Stop()
     {
-        _session?.Stop();
+        try { _session?.Stop(); } catch { }
         _processingThread?.Join(TimeSpan.FromSeconds(5));
     }
 
