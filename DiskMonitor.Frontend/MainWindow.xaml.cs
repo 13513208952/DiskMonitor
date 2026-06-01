@@ -326,38 +326,59 @@ public partial class MainWindow : Window
             App.ApplyTheme(theme);
     }
 
-    private void BtnStart_Click(object sender, RoutedEventArgs e)
+    private async void BtnStart_Click(object sender, RoutedEventArgs e)
     {
-        Task.Run(() =>
-        {
-            try
-            {
-                using var sc = new ServiceController(ServiceName);
-                sc.Start();
-                sc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(15));
-                Dispatcher.Invoke(() => _ = RefreshAllAsync());
+        BtnStart.IsEnabled = false;
+
+        var script = """
+            $sn = 'DiskMonitor'
+            & sc.exe start $sn | Out-Null
+            $dead = [DateTime]::UtcNow.AddSeconds(20)
+            while ([DateTime]::UtcNow -lt $dead) {
+                $svc = Get-Service -Name $sn -ErrorAction SilentlyContinue
+                if ($svc -and $svc.Status -eq 'Running') { break }
+                Start-Sleep -Milliseconds 500
             }
-            catch (Exception ex) { ShowError("启动服务失败", ex.Message); }
-        });
+            """;
+
+        var proc = StartElevatedPowerShell(script);
+        if (proc != null)
+        {
+            await Task.Run(() => proc.WaitForExit(30_000));
+            proc.Dispose();
+        }
+        await RefreshAllAsync();
     }
 
-    private void BtnStop_Click(object sender, RoutedEventArgs e)
+    private async void BtnStop_Click(object sender, RoutedEventArgs e)
     {
         if (MessageBox.Show("确定要停止 DiskMonitor 服务吗？\n停止后将不再记录 I/O 数据。",
                 "停止服务", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
             return;
 
-        Task.Run(() =>
-        {
-            try
-            {
-                using var sc = new ServiceController(ServiceName);
-                sc.Stop();
-                sc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(15));
-                Dispatcher.Invoke(() => _ = RefreshAllAsync());
+        BtnStop.IsEnabled = false;
+
+        var script = """
+            $sn = 'DiskMonitor'
+            $svc = Get-Service -Name $sn -ErrorAction SilentlyContinue
+            if ($svc -and $svc.Status -ne 'Stopped') {
+                & sc.exe stop $sn | Out-Null
+                $dead = [DateTime]::UtcNow.AddSeconds(20)
+                while ([DateTime]::UtcNow -lt $dead) {
+                    $svc.Refresh()
+                    if ($svc.Status -eq 'Stopped') { break }
+                    Start-Sleep -Milliseconds 500
+                }
             }
-            catch (Exception ex) { ShowError("停止服务失败", ex.Message); }
-        });
+            """;
+
+        var proc = StartElevatedPowerShell(script);
+        if (proc != null)
+        {
+            await Task.Run(() => proc.WaitForExit(30_000));
+            proc.Dispose();
+        }
+        await RefreshAllAsync();
     }
 
     private async void BtnInstall_Click(object sender, RoutedEventArgs e)
